@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Camunda 8 Worker Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body { background: #f8fafc; }
+        .sticky-top { z-index: 1030; }
+        .nav-tabs .nav-link.active { background: #e9ecef; border-bottom: 2px solid #0d6efd; }
+        .summary-card { min-width: 180px; }
+        .summary-icon { font-size: 2rem; margin-right: 0.5rem; }
+        .status-badge { font-size: 1rem; }
+        .table-sm td, .table-sm th { padding: .3rem .5rem; }
+        .job-history-table { font-size: 0.95rem; }
+        .spinner-border { width: 1.5rem; height: 1.5rem; }
+        .tooltip-inner { max-width: 350px; }
+        .table-sortable th { cursor: pointer; }
+        
+        /* Enhanced Job History Styles */
+        .job-card { 
+            border-left: 4px solid #6c757d; 
+            transition: all 0.2s ease-in-out;
+            margin-bottom: 1rem;
+        }
+        .job-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; 
+        }
+        .job-card.status-completed { border-left-color: #28a745; }
+        .job-card.status-failed { border-left-color: #dc3545; }
+        .job-card.status-running { border-left-color: #007bff; }
+        
+        .job-header { 
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .job-status-badge { font-weight: 600; }
+        .job-duration { color: #6c757d; font-size: 0.85rem; }
+        .job-time { color: #6c757d; font-size: 0.85rem; }
+        
+        .params-section, .results-section { 
+            background-color: #f8f9fa; 
+            border-radius: 6px; 
+            border: 1px solid #e9ecef;
+        }
+        
+        .param-item, .result-item { 
+            border-bottom: 1px solid #e9ecef; 
+            padding: 0.4rem 0; 
+        }
+        .param-item:last-child, .result-item:last-child { border-bottom: none; }
+        
+        .param-key, .result-key { 
+            font-weight: 600; 
+            color: #495057; 
+            font-size: 0.85rem;
+        }
+        .param-value, .result-value { 
+            color: #6c757d; 
+            font-size: 0.85rem;
+            word-break: break-word;
+        }
+        
+        .error-details { 
+            background-color: #f8d7da; 
+            border: 1px solid #f5c6cb; 
+            border-radius: 6px;
+            color: #721c24;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+        }
+        
+        .job-key { 
+            font-family: 'Courier New', monospace; 
+            font-size: 0.8rem; 
+            background: #e9ecef; 
+            padding: 2px 6px; 
+            border-radius: 3px;
+        }
+        
+        .worker-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+    </style>
+</head>
+<body>
+<header class="sticky-top bg-white shadow-sm mb-3">
+    <div class="container-fluid py-2 d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center">
+            <i class="fa-solid fa-gears text-primary me-2" style="font-size:2rem;"></i>
+            <span class="fs-4 fw-bold text-primary">Camunda 8 Worker Dashboard</span>
+        </div>
+        <button class="btn btn-outline-primary btn-sm" onclick="refreshAll()" title="Refresh All"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+    </div>
+    <ul class="nav nav-tabs container-fluid" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">Overview</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">Job History</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#datasource" type="button" role="tab">Data Source</button>
+        </li>
+    </ul>
+</header>
+<main class="container py-3">
+    <div class="tab-content" id="dashboardTabsContent">
+        <div class="tab-pane fade show active" id="overview" role="tabpanel">
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card summary-card shadow-sm">
+                        <div class="card-body d-flex align-items-center">
+                            <i class="fa-solid fa-plug summary-icon text-secondary"></i>
+                            <div>
+                                <div class="fw-bold">Zeebe Connection</div>
+                                <span id="connection-status" class="status-badge badge bg-secondary">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card summary-card shadow-sm">
+                        <div class="card-body d-flex align-items-center">
+                            <i class="fa-solid fa-clock-rotate-left summary-icon text-success"></i>
+                            <div>
+                                <div class="fw-bold">Total Jobs Processed</div>
+                                <span id="jobs-processed" class="fs-4 fw-bold text-success">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Worker Details Section -->
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <h5 class="mb-3"><i class="fa-solid fa-users-gear text-primary"></i> Worker Details</h5>
+                </div>
+                <div id="worker-cards-container" class="row g-3">
+                    <!-- Worker cards will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="history" role="tabpanel">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="fa-solid fa-list"></i> Job History 
+                            <span class="fs-6 text-muted">(last 100)</span>
+                        </h5>
+                        <button class="btn btn-outline-primary btn-sm" onclick="fetchJobHistory()" title="Refresh Job History">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div id="job-history-container">
+                        <!-- Job history cards will be dynamically inserted here -->
+                    </div>
+                    
+                    <div id="job-history-spinner" class="text-center my-3" style="display:none;">
+                        <div class="spinner-border text-primary"></div>
+                        <div class="mt-2">Loading job history...</div>
+                    </div>
+                    <div id="job-history-error" class="alert alert-danger d-none"></div>
+                    <div id="job-history-empty" class="text-center text-muted py-4" style="display:none;">
+                        <i class="fa-solid fa-inbox fs-1 mb-3"></i>
+                        <h5>No Job History Found</h5>
+                        <p>Job executions will appear here once workers start processing tasks.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="datasource" role="tabpanel">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fa-solid fa-database text-primary"></i> Data Source Overview</h5>
+                    <p class="text-muted mb-4">H2 In-Memory Database - Test data for worker operations</p>
+                    
+                    <!-- Data Summary Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-users text-primary fs-2 mb-2"></i>
+                                    <h6 class="card-title">Customers</h6>
+                                    <span id="customers-count" class="fs-4 fw-bold text-primary">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-id-badge text-success fs-2 mb-2"></i>
+                                    <h6 class="card-title">Employees</h6>
+                                    <span id="employees-count" class="fs-4 fw-bold text-success">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-building text-info fs-2 mb-2"></i>
+                                    <h6 class="card-title">External Companies</h6>
+                                    <span id="companies-count" class="fs-4 fw-bold text-info">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Tables with improved layout -->
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <ul class="nav nav-pills justify-content-center mb-3" id="dataTableTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="customers-data-tab" data-bs-toggle="pill" data-bs-target="#customers-data" type="button" role="tab">
+                                        <i class="fa-solid fa-users me-1"></i>Customers
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="employees-data-tab" data-bs-toggle="pill" data-bs-target="#employees-data" type="button" role="tab">
+                                        <i class="fa-solid fa-id-badge me-1"></i>Employees
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="companies-data-tab" data-bs-toggle="pill" data-bs-target="#companies-data" type="button" role="tab">
+                                        <i class="fa-solid fa-building me-1"></i>External Companies
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <div class="tab-content" id="dataTableTabsContent">
+                                <div class="tab-pane fade show active" id="customers-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-users me-2"></i>Customer Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddCustomerModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Customer
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="customers-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="employees-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-id-badge me-2"></i>Employee Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddEmployeeModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Employee
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="employees-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="companies-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-building me-2"></i>External Company Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddCompanyModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Company
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="companies-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Customer Modal -->
+<div class="modal fade" id="customerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customerModalTitle">Add Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customerForm">
+                    <div class="mb-3">
+                        <label for="customerIdInput" class="form-label">Customer ID *</label>
+                        <input type="number" class="form-control" id="customerIdInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerNameInput" class="form-label">Customer Name *</label>
+                        <input type="text" class="form-control" id="customerNameInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="customerEmployeeIdInput" class="form-label">Employee ID *</label>
+                        <select class="form-select" id="customerEmployeeIdInput" required>
+                            <option value="">Select Employee</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveCustomer()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Employee Modal -->
+<div class="modal fade" id="employeeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="employeeModalTitle">Add Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="employeeForm">
+                    <div class="mb-3">
+                        <label for="employeeIdInput" class="form-label">Employee ID *</label>
+                        <input type="number" class="form-control" id="employeeIdInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="employeeNameInput" class="form-label">Full Name *</label>
+                        <input type="text" class="form-control" id="employeeNameInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="employeeJobTitleInput" class="form-label">Job Title *</label>
+                        <input type="text" class="form-control" id="employeeJobTitleInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="employeeDepartmentInput" class="form-label">Department *</label>
+                        <input type="text" class="form-control" id="employeeDepartmentInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="employeePhoneInput" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="employeePhoneInput">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="saveEmployee()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Company Modal -->
+<div class="modal fade" id="companyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="companyModalTitle">Add Company</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="companyForm">
+                    <div class="mb-3">
+                        <label for="companyIdInput" class="form-label">Company ID *</label>
+                        <input type="number" class="form-control" id="companyIdInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="companyNameInput" class="form-label">Company Name *</label>
+                        <input type="text" class="form-control" id="companyNameInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="companyAddressInput" class="form-label">Address</label>
+                        <textarea class="form-control" id="companyAddressInput" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="companyContactInput" class="form-label">Contact Person</label>
+                        <input type="text" class="form-control" id="companyContactInput">
+                    </div>
+                    <div class="mb-3">
+                        <label for="companyPhoneInput" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="companyPhoneInput">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-info" onclick="saveCompany()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let jobHistoryCache = [];
+function renderStatusBadge(connected) {
+    const el = document.getElementById('connection-status');
+    if (connected) {
+        el.className = 'status-badge badge bg-success';
+        el.textContent = 'Connected';
+    } else {
+        el.className = 'status-badge badge bg-danger';
+        el.textContent = 'Disconnected';
+    }
+}
+function fetchConnectionStatus() {
+    fetch('/api/connection-status').then(r => r.json()).then(data => {
+        renderStatusBadge(data.connected);
+    });
+}
+function fetchWorkerStatus() {
+    fetch('/api/worker-status').then(r => r.json()).then(data => {
+        const container = document.getElementById('worker-cards-container');
+        container.innerHTML = '';
+        
+        Object.entries(data).forEach(([worker, status]) => {
+            const isRunning = status === 'RUNNING';
+            const statusColor = isRunning ? 'success' : 'danger';
+            const statusIcon = isRunning ? 'fa-play-circle' : 'fa-stop-circle';
+            const workerType = worker.includes('match-customer') ? 'Customer Matching' : 'Company Query';
+            const workerDesc = worker.includes('match-customer') ? 
+                'Matches customers with designated relationship individuals (DRIs)' : 
+                'Queries external company information and data';
+            
+            container.innerHTML += `
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-${statusColor}">
+                        <div class="card-header bg-${statusColor} text-white d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fa-solid fa-robot me-2"></i>${workerType}</h6>
+                            <span class="badge bg-light text-dark"><i class="fa-solid ${statusIcon} me-1"></i>${status}</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted mb-2">${workerDesc}</p>
+                            <div class="row g-2 text-sm">
+                                <div class="col-6">
+                                    <strong>Job Type:</strong><br>
+                                    <code class="small">${worker}</code>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Status:</strong><br>
+                                    <span class="badge bg-${statusColor}">${status}</span>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Last Poll:</small>
+                                    <small id="${worker}-last-poll" class="text-muted">Just now</small>
+                                </div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-${statusColor}" role="progressbar" style="width: ${isRunning ? '100' : '0'}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+function fetchJobHistory() {
+    document.getElementById('job-history-spinner').style.display = '';
+    document.getElementById('job-history-error').classList.add('d-none');
+    document.getElementById('job-history-empty').style.display = 'none';
+    document.getElementById('job-history-container').innerHTML = '';
+    
+    fetch('/api/job-history').then(r => r.json()).then(data => {
+        jobHistoryCache = data || [];
+        renderEnhancedJobHistory();
+        document.getElementById('job-history-spinner').style.display = 'none';
+        document.getElementById('jobs-processed').textContent = jobHistoryCache.length;
+    }).catch(e => {
+        document.getElementById('job-history-spinner').style.display = 'none';
+        document.getElementById('job-history-error').textContent = 'Failed to load job history: ' + e.message;
+        document.getElementById('job-history-error').classList.remove('d-none');
+    });
+}
+
+function renderEnhancedJobHistory() {
+    const container = document.getElementById('job-history-container');
+    container.innerHTML = '';
+    
+    if (!jobHistoryCache || jobHistoryCache.length === 0) {
+        document.getElementById('job-history-empty').style.display = 'block';
+        return;
+    }
+    
+    jobHistoryCache.forEach(job => {
+        const statusClass = getStatusClass(job.status);
+        const statusIcon = getStatusIcon(job.status);
+        const workerIcon = getWorkerIcon(job.jobType);
+        
+        let parametersHtml = '';
+        if (job.inputParameters && Object.keys(job.inputParameters).length > 0) {
+            parametersHtml = Object.entries(job.inputParameters)
+                .map(([key, value]) => `
+                    <div class="param-item">
+                        <div class="param-key">${key}:</div>
+                        <div class="param-value">${escapeHtml(String(value))}</div>
+                    </div>
+                `).join('');
+        } else {
+            parametersHtml = '<div class="text-muted fst-italic">No input parameters</div>';
+        }
+        
+        let resultsHtml = '';
+        if (job.results && Object.keys(job.results).length > 0) {
+            resultsHtml = Object.entries(job.results)
+                .map(([key, value]) => `
+                    <div class="result-item">
+                        <div class="result-key">${key}:</div>
+                        <div class="result-value">${escapeHtml(String(value))}</div>
+                    </div>
+                `).join('');
+        } else if (job.status === 'COMPLETED') {
+            resultsHtml = '<div class="text-muted fst-italic">Job completed successfully</div>';
+        } else {
+            resultsHtml = '<div class="text-muted fst-italic">No results available</div>';
+        }
+        
+        let errorHtml = '';
+        if (job.errorMessage && job.errorMessage.trim() !== '') {
+            errorHtml = `
+                <div class="mt-3">
+                    <h6 class="text-danger mb-2">
+                        <i class="fa-solid fa-exclamation-triangle me-1"></i>Error Details
+                    </h6>
+                    <div class="error-details p-2">
+                        ${escapeHtml(job.errorMessage)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        const jobCard = `
+            <div class="card job-card status-${job.status.toLowerCase()} shadow-sm">
+                <div class="card-header job-header d-flex justify-content-between align-items-center py-2">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid ${workerIcon} text-primary me-2"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">${job.workerName}</h6>
+                            <div class="job-time">${job.executionTime}</div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-${statusClass} job-status-badge me-2">
+                            <i class="fa-solid ${statusIcon} me-1"></i>${job.status}
+                        </span>
+                        <div class="job-duration">${job.duration}</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="fa-solid fa-arrow-right text-primary me-1"></i>Input Parameters
+                            </h6>
+                            <div class="params-section p-2">
+                                ${parametersHtml}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-semibold mb-2">
+                                <i class="fa-solid fa-arrow-left text-success me-1"></i>Results
+                            </h6>
+                            <div class="results-section p-2">
+                                ${resultsHtml}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${errorHtml}
+                    
+                    <div class="row mt-3 pt-2 border-top">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <strong>Job Key:</strong> <span class="job-key">${job.jobKey}</span>
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <span class="worker-badge badge bg-light text-dark border">
+                                ${job.jobType}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML += jobCard;
+    });
+}
+
+function getStatusClass(status) {
+    switch (status.toUpperCase()) {
+        case 'COMPLETED': return 'success';
+        case 'FAILED': return 'danger';
+        case 'RUNNING': return 'primary';
+        case 'CANCELLED': return 'warning';
+        default: return 'secondary';
+    }
+}
+
+function getStatusIcon(status) {
+    switch (status.toUpperCase()) {
+        case 'COMPLETED': return 'fa-check-circle';
+        case 'FAILED': return 'fa-times-circle';
+        case 'RUNNING': return 'fa-spinner fa-spin';
+        case 'CANCELLED': return 'fa-ban';
+        default: return 'fa-question-circle';
+    }
+}
+
+function getWorkerIcon(jobType) {
+    switch (jobType) {
+        case 'match-customer-with-dri': return 'fa-users';
+        case 'query-for-company': return 'fa-building';
+        case 'search-employee': return 'fa-user-search';
+        default: return 'fa-cog';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function renderJobHistory() {
+    // Legacy function - now just calls the enhanced version
+    renderEnhancedJobHistory();
+}
+
+function renderTable(data, tableId) {
+    const el = document.getElementById(tableId);
+    el.innerHTML = '';
+    if (!data || !data.length) {
+        el.innerHTML = '<tr><td colspan="99" class="text-center text-muted py-4">No data available</td></tr>';
+        return;
+    }
+    const keys = Object.keys(data[0]);
+    const actionKeys = [...keys, 'actions'];
+    
+    // Create header
+    el.innerHTML += '<thead class="table-light"><tr>' + 
+        actionKeys.map(k => `<th class="fw-semibold">${k === 'actions' ? 'Actions' : k}</th>`).join('') + 
+        '</tr></thead>';
+    
+    // Create body with action buttons
+    let tbody = '<tbody>';
+    data.forEach(row => {
+        tbody += '<tr>';
+        keys.forEach(k => {
+            tbody += `<td>${row[k] || ''}</td>`;
+        });
+        
+        // Add action buttons based on table type
+        let entityType = tableId.replace('-table', '');
+        let idField = entityType === 'customers' ? 'customerId' : 
+                     entityType === 'employees' ? 'employeeId' : 'companyId';
+        let entityId = row[idField];
+        
+        tbody += `<td>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="editEntity('${entityType}', ${entityId})" title="Edit">
+                <i class="fa-solid fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteEntity('${entityType}', ${entityId})" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </td>`;
+        tbody += '</tr>';
+    });
+    tbody += '</tbody>';
+    el.innerHTML += tbody;
+    
+    // Update count displays
+    if (tableId === 'customers-table') {
+        document.getElementById('customers-count').textContent = data.length;
+    } else if (tableId === 'employees-table') {
+        document.getElementById('employees-count').textContent = data.length;
+    } else if (tableId === 'companies-table') {
+        document.getElementById('companies-count').textContent = data.length;
+    }
+}
+function fetchAndRenderTable(url, tableId) {
+    const el = document.getElementById(tableId);
+    el.innerHTML = '<tbody><tr><td colspan="99" class="text-center py-4"><div class="spinner-border text-primary"></div><div class="mt-2">Loading...</div></td></tr></tbody>';
+    fetch(url).then(r => r.json()).then(data => renderTable(data, tableId)).catch(e => {
+        el.innerHTML = '<tbody><tr><td colspan="99" class="text-center text-danger py-4"><i class="fa-solid fa-exclamation-triangle me-2"></i>Failed to load data</td></tr></tbody>';
+    });
+}
+function refreshAll() {
+    fetchConnectionStatus();
+    fetchWorkerStatus();
+    fetchJobHistory();
+    fetchAndRenderTable('/api/customers', 'customers-table');
+    fetchAndRenderTable('/api/employees', 'employees-table');
+    fetchAndRenderTable('/api/companies', 'companies-table');
+}
+refreshAll();
+setInterval(() => {
+    fetchConnectionStatus();
+    fetchWorkerStatus();
+    fetchJobHistory();
+}, 5000);
+
+// CRUD Operations
+let currentEditId = null;
+let currentEditType = null;
+
+function showAddCustomerModal() {
+    currentEditId = null;
+    currentEditType = 'customers';
+    document.getElementById('customerModalTitle').textContent = 'Add Customer';
+    document.getElementById('customerForm').reset();
+    loadEmployeeOptions();
+    new bootstrap.Modal(document.getElementById('customerModal')).show();
+}
+
+function showAddEmployeeModal() {
+    currentEditId = null;
+    currentEditType = 'employees';
+    document.getElementById('employeeModalTitle').textContent = 'Add Employee';
+    document.getElementById('employeeForm').reset();
+    new bootstrap.Modal(document.getElementById('employeeModal')).show();
+}
+
+function showAddCompanyModal() {
+    currentEditId = null;
+    currentEditType = 'companies';
+    document.getElementById('companyModalTitle').textContent = 'Add Company';
+    document.getElementById('companyForm').reset();
+    new bootstrap.Modal(document.getElementById('companyModal')).show();
+}
+
+function editEntity(entityType, entityId) {
+    currentEditId = entityId;
+    currentEditType = entityType;
+    
+    if (entityType === 'customers') {
+        fetch(`/api/customers`).then(r => r.json()).then(data => {
+            const customer = data.find(c => c.customerId == entityId);
+            if (customer) {
+                document.getElementById('customerModalTitle').textContent = 'Edit Customer';
+                document.getElementById('customerIdInput').value = customer.customerId;
+                document.getElementById('customerNameInput').value = customer.customerName;
+                document.getElementById('customerEmployeeIdInput').value = customer.employeeId;
+                loadEmployeeOptions();
+                new bootstrap.Modal(document.getElementById('customerModal')).show();
+            }
+        });
+    } else if (entityType === 'employees') {
+        fetch(`/api/employees`).then(r => r.json()).then(data => {
+            const employee = data.find(e => e.employeeId == entityId);
+            if (employee) {
+                document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
+                document.getElementById('employeeIdInput').value = employee.employeeId;
+                document.getElementById('employeeNameInput').value = employee.fullName;
+                document.getElementById('employeeJobTitleInput').value = employee.jobTitle;
+                document.getElementById('employeeDepartmentInput').value = employee.department;
+                document.getElementById('employeePhoneInput').value = employee.phoneNumber || '';
+                new bootstrap.Modal(document.getElementById('employeeModal')).show();
+            }
+        });
+    } else if (entityType === 'companies') {
+        fetch(`/api/companies`).then(r => r.json()).then(data => {
+            const company = data.find(c => c.companyId == entityId);
+            if (company) {
+                document.getElementById('companyModalTitle').textContent = 'Edit Company';
+                document.getElementById('companyIdInput').value = company.companyId;
+                document.getElementById('companyNameInput').value = company.companyName;
+                document.getElementById('companyAddressInput').value = company.address || '';
+                document.getElementById('companyContactInput').value = company.contactPerson || '';
+                document.getElementById('companyPhoneInput').value = company.phoneNumber || '';
+                new bootstrap.Modal(document.getElementById('companyModal')).show();
+            }
+        });
+    }
+}
+
+function deleteEntity(entityType, entityId) {
+    if (confirm(`Are you sure you want to delete this ${entityType.slice(0, -1)}?`)) {
+        fetch(`/api/${entityType}/${entityId}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(data => {
+                alert(data.message);
+                refreshDataTables();
+            })
+            .catch(e => alert('Error deleting record: ' + e.message));
+    }
+}
+
+function saveCustomer() {
+    const customer = {
+        customerId: parseInt(document.getElementById('customerIdInput').value),
+        customerName: document.getElementById('customerNameInput').value,
+        employeeId: parseInt(document.getElementById('customerEmployeeIdInput').value)
+    };
+    
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/customers/${currentEditId}` : '/api/customers';
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customer)
+    })
+    .then(r => r.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('customerModal')).hide();
+        refreshDataTables();
+    })
+    .catch(e => alert('Error saving customer: ' + e.message));
+}
+
+function saveEmployee() {
+    const employee = {
+        employeeId: parseInt(document.getElementById('employeeIdInput').value),
+        fullName: document.getElementById('employeeNameInput').value,
+        jobTitle: document.getElementById('employeeJobTitleInput').value,
+        department: document.getElementById('employeeDepartmentInput').value,
+        phoneNumber: document.getElementById('employeePhoneInput').value
+    };
+    
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/employees/${currentEditId}` : '/api/employees';
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(employee)
+    })
+    .then(r => r.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('employeeModal')).hide();
+        refreshDataTables();
+    })
+    .catch(e => alert('Error saving employee: ' + e.message));
+}
+
+function saveCompany() {
+    const company = {
+        companyId: parseInt(document.getElementById('companyIdInput').value),
+        companyName: document.getElementById('companyNameInput').value,
+        address: document.getElementById('companyAddressInput').value,
+        contactPerson: document.getElementById('companyContactInput').value,
+        phoneNumber: document.getElementById('companyPhoneInput').value
+    };
+    
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/companies/${currentEditId}` : '/api/companies';
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(company)
+    })
+    .then(r => r.json())
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('companyModal')).hide();
+        refreshDataTables();
+    })
+    .catch(e => alert('Error saving company: ' + e.message));
+}
+
+function loadEmployeeOptions() {
+    fetch('/api/employees').then(r => r.json()).then(employees => {
+        const select = document.getElementById('customerEmployeeIdInput');
+        select.innerHTML = '<option value="">Select Employee</option>';
+        employees.forEach(emp => {
+            select.innerHTML += `<option value="${emp.employeeId}">${emp.fullName} (${emp.department})</option>`;
+        });
+    });
+}
+
+function refreshDataTables() {
+    fetchAndRenderTable('/api/customers', 'customers-table');
+    fetchAndRenderTable('/api/employees', 'employees-table');
+    fetchAndRenderTable('/api/companies', 'companies-table');
+}
+</script>
+</body>
+</html>
