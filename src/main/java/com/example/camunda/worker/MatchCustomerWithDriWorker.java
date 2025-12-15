@@ -160,7 +160,7 @@ public class MatchCustomerWithDriWorker {
             
             // If only one customer found, add individual fields for easy access (backward compatibility)
             if (customers.size() == 1) {
-                Customer customer = customers.get(0);
+                Customer customer = customers.getFirst();
                 Employee employee = customerService.getEmployeeForCustomer(customer);
                 
                 result.put("customerId", customer.getCustomerId());
@@ -214,13 +214,12 @@ public class MatchCustomerWithDriWorker {
             log.trace("extractLong: value is null");
             return null;
         }
-        if (value instanceof Number) {
-            Long result = ((Number) value).longValue();
+        if (value instanceof Number number) {
+            Long result = number.longValue();
             log.trace("extractLong: converted Number {} to Long {}", value, result);
             return result;
         }
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof String str) {
             if (str.trim().isEmpty()) {
                 log.trace("extractLong: string is empty");
                 return null;
@@ -243,8 +242,7 @@ public class MatchCustomerWithDriWorker {
             log.trace("extractString: value is null");
             return null;
         }
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof String str) {
             String result = str.trim().isEmpty() ? null : str.trim();
             log.trace("extractString: converted String '{}' to '{}'", str, result);
             return result;
@@ -259,8 +257,7 @@ public class MatchCustomerWithDriWorker {
             log.trace("extractBoolean: null value, returning null");
             return null;
         }
-        if (value instanceof Boolean) {
-            Boolean result = (Boolean) value;
+        if (value instanceof Boolean result) {
             log.trace("extractBoolean: Boolean value '{}' used directly", result);
             return result;
         }

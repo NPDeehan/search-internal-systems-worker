@@ -97,7 +97,7 @@ public class EmployeeSearchWorker {
                 
                 // If only one employee found, add individual employee fields for easy access
                 if (employees.size() == 1) {
-                    Employee employee = employees.get(0);
+                    Employee employee = employees.getFirst();
                     result.put("employeeId", employee.getEmployeeId());
                     result.put("employeeName", employee.getFullName());
                     result.put("employeeTitle", employee.getJobTitle());
@@ -212,8 +212,7 @@ public class EmployeeSearchWorker {
         if (value == null) {
             return null;
         }
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof String str) {
             return str.trim().isEmpty() ? null : str.trim();
         }
         String result = value.toString().trim();
@@ -224,11 +223,10 @@ public class EmployeeSearchWorker {
         if (value == null) {
             return null;
         }
-        if (value instanceof Boolean) {
-            return (Boolean) value;
+        if (value instanceof Boolean boolean1) {
+            return boolean1;
         }
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof String str) {
             return Boolean.parseBoolean(str.trim());
         }
         return null;

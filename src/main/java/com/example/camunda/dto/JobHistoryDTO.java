@@ -44,9 +44,9 @@ public class JobHistoryDTO {
             if (ms < 1000) {
                 dto.setDuration(ms + " ms");
             } else if (ms < 60000) {
-                dto.setDuration(String.format("%.1f s", ms / 1000.0));
+                dto.setDuration("%.1f s".formatted(ms / 1000.0));
             } else {
-                dto.setDuration(String.format("%.1f min", ms / 60000.0));
+                dto.setDuration("%.1f min".formatted(ms / 60000.0));
             }
         } else {
             dto.setDuration("N/A");

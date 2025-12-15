@@ -349,14 +349,13 @@ public class CustomerService {
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("none");
                 
-            String errorMsg = String.format(
-                "Customer not found with ID: %s, Name: '%s', fuzzy: %s. Available customers include: %s", 
-                customerId, customerName, fuzzyMatching, examples);
+            String errorMsg = "Customer not found with ID: %s, Name: '%s', fuzzy: %s. Available customers include: %s".formatted(
+                    customerId, customerName, fuzzyMatching, examples);
             
             throw new CustomerNotFoundException(errorMsg);
         }
         
-        Customer customer = customers.get(0); // Take first result for single customer search
+        Customer customer = customers.getFirst(); // Take first result for single customer search
         log.debug("Found customer: {}, fetching associated employee", customer.getCustomerName());
         return customer;
     }
@@ -372,9 +371,8 @@ public class CustomerService {
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("none");
                 
-            String errorMsg = String.format(
-                "Customer not found with ID: %s, Name: '%s'. Available customers include: %s", 
-                customerId, customerName, examples);
+            String errorMsg = "Customer not found with ID: %s, Name: '%s'. Available customers include: %s".formatted(
+                    customerId, customerName, examples);
             
             throw new CustomerNotFoundException(errorMsg);
         }

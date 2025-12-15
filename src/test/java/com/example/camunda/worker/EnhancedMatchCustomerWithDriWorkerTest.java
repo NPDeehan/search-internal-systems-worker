@@ -87,7 +87,7 @@ public class EnhancedMatchCustomerWithDriWorkerTest {
         java.util.List<Map<String, Object>> customers = (java.util.List<Map<String, Object>>) result.get("customers");
         assertEquals(1, customers.size());
         
-        Map<String, Object> customerPair = customers.get(0);
+        Map<String, Object> customerPair = customers.getFirst();
         @SuppressWarnings("unchecked")
         Map<String, Object> customer = (Map<String, Object>) customerPair.get("customer");
         @SuppressWarnings("unchecked")

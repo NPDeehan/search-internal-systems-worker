@@ -44,7 +44,7 @@ class CustomerSearchDebugTest {
         assertFalse(allCustomers.isEmpty(), "Database should contain customers");
 
         // Try to search for the first customer by name
-        Customer firstCustomer = allCustomers.get(0);
+        Customer firstCustomer = allCustomers.getFirst();
         log.info("Searching for customer: '{}'", firstCustomer.getCustomerName());
 
         Optional<Customer> foundCustomer = customerService.findCustomer(null, firstCustomer.getCustomerName());
@@ -68,7 +68,7 @@ class CustomerSearchDebugTest {
         assertFalse(allCustomers.isEmpty(), "Database should contain customers");
 
         // Try partial matching with first customer
-        Customer firstCustomer = allCustomers.get(0);
+        Customer firstCustomer = allCustomers.getFirst();
         String[] nameParts = firstCustomer.getCustomerName().split(" ");
         
         if (nameParts.length > 0) {

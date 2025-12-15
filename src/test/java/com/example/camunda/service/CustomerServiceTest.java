@@ -63,7 +63,7 @@ class CustomerServiceTest {
 
         // Assert
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getCustomerName()).isEqualTo("Test Customer");
+        assertThat(result.getFirst().getCustomerName()).isEqualTo("Test Customer");
         verify(customerRepository).findAll();
     }
 
