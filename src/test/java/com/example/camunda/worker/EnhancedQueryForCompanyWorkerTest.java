@@ -77,7 +77,7 @@ public class EnhancedQueryForCompanyWorkerTest {
         List<Map<String, Object>> companies = (List<Map<String, Object>>) searchResult.get("companies");
         assertEquals(1, companies.size());
         
-        Map<String, Object> company = companies.get(0);
+        Map<String, Object> company = companies.getFirst();
         assertEquals(123L, company.get("companyId"));
         assertEquals("Test Company", company.get("companyName"));
         assertEquals("123 Tech Street, San Francisco, CA", company.get("address"));

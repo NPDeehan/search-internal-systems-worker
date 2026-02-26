@@ -114,9 +114,8 @@ public class QueryForCompanyWorker {
     
     private Long extractLong(Object value) {
         if (value == null) return null;
-        if (value instanceof Number) return ((Number) value).longValue();
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof Number number) return number.longValue();
+        if (value instanceof String str) {
             if (str.trim().isEmpty()) return null;
             try {
                 return Long.parseLong(str);
@@ -129,8 +128,7 @@ public class QueryForCompanyWorker {
     
     private String extractString(Object value) {
         if (value == null) return null;
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof String str) {
             return str.trim().isEmpty() ? null : str.trim();
         }
         return value.toString().trim();
@@ -140,11 +138,10 @@ public class QueryForCompanyWorker {
         if (value == null) {
             return null;
         }
-        if (value instanceof Boolean) {
-            return (Boolean) value;
+        if (value instanceof Boolean boolean1) {
+            return boolean1;
         }
-        if (value instanceof String) {
-            String str = (String) value;
+        if (value instanceof String str) {
             if (str.trim().isEmpty()) {
                 return null;
             }

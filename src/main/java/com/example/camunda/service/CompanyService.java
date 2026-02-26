@@ -181,7 +181,7 @@ public class CompanyService {
     public ExternalCompany getCompany(Long companyId, String companyName) {
         return findCompany(companyId, companyName)
                 .orElseThrow(() -> new CompanyNotFoundException(
-                    String.format("Company not found with ID: %s, Name: %s", companyId, companyName)));
+                "Company not found with ID: %s, Name: %s".formatted(companyId, companyName)));
     }
 
     @Transactional

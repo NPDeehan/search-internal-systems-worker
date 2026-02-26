@@ -263,9 +263,9 @@ public class DataSeedingService implements CommandLineRunner {
     }
 
     private String generatePhoneNumber() {
-        return String.format("+1-%03d-%03d-%04d", 
-                200 + random.nextInt(800), 
-                200 + random.nextInt(800), 
+        return "+1-%03d-%03d-%04d".formatted(
+                200 + random.nextInt(800),
+                200 + random.nextInt(800),
                 1000 + random.nextInt(9000));
     }
 

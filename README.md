@@ -2,6 +2,17 @@
 
 A comprehensive Spring Boot application that provides Camunda 8 job workers for searching internal company systems including employees, customers, and external companies. This project includes both fuzzy matching capabilities and element templates for easy integration with Camunda 8 processes.
 
+## 🎯 Why this project is useful for PoCs
+
+This project is designed to act as a **ready-to-use source of external workers and data objects** for Camunda 8 process PoCs.
+
+- It gives you runnable workers that behave like external systems (employee, customer, company, account search)
+- It provides seeded domain objects (customers, employees, companies, accounts, links) so process flows can be tested quickly
+- It includes connector templates so BPMN modelers can configure workers without writing code
+- It exposes REST + dashboard views so teams can inspect and demo behavior during workshops and early discovery
+
+In short: use this repository to simulate real integrations early, then replace each mocked/seeded data source with real upstream systems as your PoC matures.
+
 ## 🔗 What are Camunda 8 Connectors?
 
 Camunda 8 Connectors are pre-built integrations that allow you to connect your BPMN processes with external systems, APIs, and services. They come in two main types:
@@ -22,7 +33,7 @@ Camunda 8 Connectors are pre-built integrations that allow you to connect your B
 
 ## 🔍 Implemented Connectors
 
-This project implements three custom job workers with fuzzy matching capabilities:
+This project implements four custom job workers with fuzzy matching capabilities:
 
 ### 1. **Match Customer with DRI** (`match-customer-with-dri`)
 - **Purpose**: Match customers with their designated relationship individuals (DRIs)
@@ -38,9 +49,24 @@ This project implements three custom job workers with fuzzy matching capabilitie
 
 ### 3. **Query for Company** (`query-for-company`)
 - **Purpose**: Search external companies database
-- **Search By**: Company name, company address  
+- **Search By**: Company name, industry, city, revenue  
 - **Features**: Fuzzy matching with company names and addresses
 - **Returns**: Company details including ID, name, address, contact information
+
+### 4. **Search Account** (`search-account`)
+- **Purpose**: Search account records and customer-account relationships
+- **Search By**: Account ID, legacy `customerAccountId` alias, account number, customer ID
+- **Features**: Multi-result search, role mapping (OWNER/ADMIN/NAMED), fallback handling when `customerId` is interpreted as account id for compatibility
+- **Returns**: Account details (type, balance, currency, status, dates) plus linked customer roles
+
+### 🧾 **Worker Reference (at a glance)**
+
+| Job Type | Worker Class | Primary Output Variable | Status Field |
+|---|---|---|---|
+| `match-customer-with-dri` | `MatchCustomerWithDriWorker` | `matchingResult` | `matchStatus` |
+| `search-employee` | `EmployeeSearchWorker` | `employeeSearchResult` | `searchStatus` |
+| `query-for-company` | `QueryForCompanyWorker` | `companySearchResult` | `status` inside `companySearchResult` |
+| `search-account` | `AccountSearchWorker` | `accountSearchResult` | `searchStatus` |
 
 ### 🧠 **Fuzzy Matching Features**
 All connectors support advanced fuzzy matching using:
@@ -85,36 +111,32 @@ All connectors support advanced fuzzy matching using:
    - Select scopes: `Zeebe`, `Tasklist`, `Operate`
    - Copy the generated **Client ID** and **Client Secret**
 
-### Step 2: Configure Application Properties
+### Step 2: Configure secrets (recommended: local gitignored file)
 
-Update `src/main/resources/application.properties`:
+Create a local `application-secrets.properties` in the repository root (this file is gitignored):
 
 ```properties
-# Camunda 8 SaaS Connection
-camunda.client.mode=saas
 camunda.client.auth.client-id=YOUR_CLIENT_ID_HERE
-camunda.client.auth.client-secret=YOUR_CLIENT_SECRET_HERE  
+camunda.client.auth.client-secret=YOUR_CLIENT_SECRET_HERE
 camunda.client.cloud.cluster-id=YOUR_CLUSTER_ID_HERE
 camunda.client.cloud.region=YOUR_REGION_HERE
 ```
 
-### Step 3: Environment Variables (Alternative/Secure)
-
-Instead of hardcoding credentials, use environment variables:
+`src/main/resources/application.properties` imports this file via:
 
 ```properties
-camunda.client.auth.client-id=${CAMUNDA_CLIENT_ID}
-camunda.client.auth.client-secret=${CAMUNDA_CLIENT_SECRET}
-camunda.client.cloud.cluster-id=${CAMUNDA_CLUSTER_ID}
-camunda.client.cloud.region=${CAMUNDA_REGION}
+spring.config.import=optional:file:./application-secrets.properties
 ```
 
-Set environment variables:
-```bash
-export CAMUNDA_CLIENT_ID="your-client-id"
-export CAMUNDA_CLIENT_SECRET="your-client-secret"  
-export CAMUNDA_CLUSTER_ID="your-cluster-id"
-export CAMUNDA_REGION="your-region"
+### Step 3: Environment variables (alternative)
+
+You can also provide credentials using environment variables:
+
+```powershell
+$env:CAMUNDA_CLIENT_ID="your-client-id"
+$env:CAMUNDA_CLIENT_SECRET="your-client-secret"
+$env:CAMUNDA_CLUSTER_ID="your-cluster-id"
+$env:CAMUNDA_REGION="your-region"
 ```
 
 ### Common Regions:
@@ -138,13 +160,13 @@ mvn clean compile
 mvn spring-boot:run
 ```
 
-The application will start on `http://localhost:8080`
+The application will start on `http://localhost:8081`
 
 ### 3. Verify Connection
 
 - Check logs for successful Camunda connection
-- Visit `http://localhost:8080/actuator/health` for health status
-- Access H2 console at `http://localhost:8080/h2-console` for database inspection
+- Visit `http://localhost:8081/actuator/health` for health status
+- Access H2 console at `http://localhost:8081/h2-console` for database inspection
 
 ### 4. Import Element Templates
 
@@ -158,17 +180,95 @@ The application will start on `http://localhost:8080`
 
 ### Data Management
 - **Persistent H2 Database**: Data survives application restarts
-- **Smart Data Seeding**: Auto-populates sample data only if database is empty
-- **50 Sample Employees**: Various departments and job titles
-- **100 Sample Customers**: With assigned employee relationships  
-- **100 Sample Companies**: External company directory
+- **Deterministic Data Seeding**: Re-seeds mock data at startup for repeatable PoC demos
+- **Employees**: 105 records
+- **Customers**: 107 records
+- **Companies**: 104 records
+- **Accounts**: 110 records + customer-account relationship links
 
 ### REST API Endpoints
 - `GET /api/customers` - List all customers
 - `GET /api/employees` - List all employees  
 - `GET /api/companies` - List all companies
+- `GET /api/accounts` - List all accounts
+- `GET /api/customer-accounts` - List customer-account links
 - `GET /api/worker-status` - Check job worker status
 - `GET /actuator/health` - Application health check
+
+## ▶️ Runbook (exactly how to run)
+
+1. Ensure Java 17+ and Maven are installed.
+2. Add credentials in local `application-secrets.properties` (or set env vars).
+3. Build once:
+
+```bash
+mvn clean compile
+```
+
+4. Start the app:
+
+```bash
+mvn spring-boot:run
+```
+
+5. Verify:
+   - Dashboard: `http://localhost:8081`
+   - Health: `http://localhost:8081/actuator/health`
+   - H2 console: `http://localhost:8081/h2-console`
+
+## 🛠️ Maintenance guide
+
+### Day-to-day
+- Keep `application-secrets.properties` local only (never commit)
+- Review worker health using `GET /api/worker-status`
+- Review job execution history in dashboard/API
+
+### Data lifecycle
+- The app seeds deterministic mock data at startup
+- If you need a clean local DB, run the VS Code task `Reset H2 DB files` or delete `data/camunda-worker-db.*`
+
+### Safe public repo practice
+- Rotate Camunda credentials if they were ever committed
+- Run a secrets scan before push (for example gitleaks)
+- Stage selectively (`git add <files>`) instead of `git add .`
+
+## 🧩 How to add a new worker (extension checklist)
+
+For every new worker, update **all** of the following areas:
+
+1. **Datasource / Domain Model**
+   - Add or extend JPA entities in `src/main/java/com/example/camunda/model/`
+   - Add repositories in `src/main/java/com/example/camunda/repository/`
+   - Seed representative PoC data in `DataInitializer`
+
+2. **Backend Service + Worker**
+   - Add business logic in `src/main/java/com/example/camunda/service/`
+   - Implement the worker in `src/main/java/com/example/camunda/worker/` (input validation, result mapping, error handling)
+   - Expose/adjust REST endpoints in controllers if the dashboard needs new data views
+
+3. **Polling Registration**
+   - Register the new job type in `ZeebeJobPollingService` with a scheduled poll method
+   - Ensure the job type string matches BPMN + element template exactly
+
+4. **Frontend (Dashboard/UI)**
+   - Add table/view/form wiring in `src/main/resources/templates/dashboard.html`
+   - Add API fetch/render behavior for new entity/worker status and any create/update flows
+
+5. **Connector Template**
+   - Add a new JSON template under `element-templates/`
+   - Define task type, inputs, outputs, and user-facing descriptions
+   - Import template in Camunda Modeler and validate mapping against worker outputs
+
+6. **Tests**
+   - Add unit/integration tests for service + worker + controller paths
+   - Add positive, not-found, and invalid-input scenarios
+
+### Definition of done for a new worker
+- Worker polls and handles jobs successfully
+- Template appears and works in Modeler
+- Dashboard/API show corresponding domain data
+- Seed data supports realistic PoC demos
+- Tests pass
 
 ### Monitoring & Management
 - **Spring Boot Actuator**: Health checks and metrics
@@ -189,13 +289,15 @@ The application will start on `http://localhost:8080`
   - "Match Customer with DRI"  
   - "Search Employee"
   - "Query for Company"
+   - "Search Account"
 - Fill in search parameters using static values or FEEL expressions
 
 ### 3. Configure Output Variables
 Each connector now uses a single consolidated output variable:
-- **Employee Search**: `employeeSearchResponse` 
+- **Employee Search**: `employeeSearchResult` 
 - **Customer Match**: `matchingResult`
-- **Company Query**: `companySearchResponse`
+- **Company Query**: `companySearchResult`
+- **Account Search**: `accountSearchResult`
 
 ### 4. Deploy and Execute
 - Deploy your process to Camunda 8

@@ -93,7 +93,7 @@ public class EmployeeSearchWorkerTest {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> employees = (List<Map<String, Object>>) result.get("employees");
         assertEquals(1, employees.size());
-        assertEquals("John Smith", employees.get(0).get("fullName"));
+        assertEquals("John Smith", employees.getFirst().get("fullName"));
     }
 
     @Test
