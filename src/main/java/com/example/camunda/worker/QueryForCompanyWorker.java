@@ -3,8 +3,8 @@ package com.example.camunda.worker;
 import com.example.camunda.model.ExternalCompany;
 import com.example.camunda.service.CompanyService;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -13,11 +13,14 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class QueryForCompanyWorker {
     
+    private static final Logger log = LoggerFactory.getLogger(QueryForCompanyWorker.class);
     private final CompanyService companyService;
+
+    public QueryForCompanyWorker(CompanyService companyService) {
+        this.companyService = companyService;
+    }
 
     public Map<String, Object> handleJob(final ActivatedJob job) {
         log.debug("Processing query-for-company job: {}", job.getKey());

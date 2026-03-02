@@ -5,11 +5,12 @@ import com.example.camunda.service.ZeebeConnectionService;
 import com.example.camunda.worker.MatchCustomerWithDriWorker;
 import com.example.camunda.worker.QueryForCompanyWorker;
 import com.example.camunda.worker.EmployeeSearchWorker;
+import com.example.camunda.worker.AccountSearchWorker;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -19,17 +20,32 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class ZeebeJobPollingService {
+    
+    private static final Logger log = LoggerFactory.getLogger(ZeebeJobPollingService.class);
     
     private final ZeebeConnectionService zeebeConnectionService;
     private final MatchCustomerWithDriWorker matchWorker;
     private final QueryForCompanyWorker companyWorker;
     private final EmployeeSearchWorker employeeSearchWorker;
+    private final AccountSearchWorker accountSearchWorker;
     private final JobHistoryService jobHistoryService;
     
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
+
+    public ZeebeJobPollingService(ZeebeConnectionService zeebeConnectionService,
+                                  MatchCustomerWithDriWorker matchWorker,
+                                  QueryForCompanyWorker companyWorker,
+                                  EmployeeSearchWorker employeeSearchWorker,
+                                  AccountSearchWorker accountSearchWorker,
+                                  JobHistoryService jobHistoryService) {
+        this.zeebeConnectionService = zeebeConnectionService;
+        this.matchWorker = matchWorker;
+        this.companyWorker = companyWorker;
+        this.employeeSearchWorker = employeeSearchWorker;
+        this.accountSearchWorker = accountSearchWorker;
+        this.jobHistoryService = jobHistoryService;
+    }
 
     @PostConstruct
     public void startPolling() {
@@ -64,6 +80,14 @@ public class ZeebeJobPollingService {
     public void pollEmployeeSearchJobs() {
         if (isRunning.get()) {
             pollJobs("search-employee", employeeSearchWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000) // Poll every second
+    @Async
+    public void pollAccountSearchJobs() {
+        if (isRunning.get()) {
+            pollJobs("search-account", accountSearchWorker::handleJob);
         }
     }
 

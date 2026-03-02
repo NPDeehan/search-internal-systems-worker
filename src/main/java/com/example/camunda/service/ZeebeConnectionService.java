@@ -1,8 +1,8 @@
 package com.example.camunda.service;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -10,13 +10,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class ZeebeConnectionService {
+    
+    private static final Logger log = LoggerFactory.getLogger(ZeebeConnectionService.class);
     
     private final ZeebeClient zeebeClient;
     private final AtomicBoolean isConnected = new AtomicBoolean(false);
     private final AtomicReference<String> lastError = new AtomicReference<>();
+
+    public ZeebeConnectionService(ZeebeClient zeebeClient) {
+        this.zeebeClient = zeebeClient;
+    }
 
     public boolean isConnected() {
         try {

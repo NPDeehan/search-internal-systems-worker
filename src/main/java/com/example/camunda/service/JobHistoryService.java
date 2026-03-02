@@ -2,8 +2,8 @@ package com.example.camunda.service;
 
 import com.example.camunda.model.JobHistory;
 import com.example.camunda.repository.JobHistoryRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -14,12 +14,16 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class JobHistoryService {
     
+    private static final Logger log = LoggerFactory.getLogger(JobHistoryService.class);
+    
     private final JobHistoryRepository jobHistoryRepository;
+
+    public JobHistoryService(JobHistoryRepository jobHistoryRepository) {
+        this.jobHistoryRepository = jobHistoryRepository;
+    }
 
     public List<JobHistory> getRecentJobHistory(int limit) {
         log.debug("Fetching recent job history, limit: {}", limit);

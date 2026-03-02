@@ -3,7 +3,7 @@
   "name": "Match Customer with DRI",
   "id": "com.example.camunda.match-customer-with-dri",
   "description": "Service task to match a customer with their designated relationship individual (DRI)",
-  "version": 1,
+  "version": 2,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -153,6 +153,19 @@
         "type": "zeebe:output",
         "source": "=customerName",
         "target": "customerName"
+      }
+    },
+    {
+      "id": "customerAddressOutput",
+      "label": "Customer Address Output",
+      "description": "Process variable to store the matched customer address",
+      "type": "String",
+      "group": "output",
+      "value": "customerAddress",
+      "binding": {
+        "type": "zeebe:output",
+        "source": "=customerAddress",
+        "target": "customerAddress"
       }
     },
     {
