@@ -180,7 +180,7 @@ The application will start on `http://localhost:8081`
 
 ### Data Management
 - **Persistent H2 Database**: Data survives application restarts
-- **Deterministic Data Seeding**: Re-seeds mock data at startup for repeatable PoC demos
+- **Deterministic Data Seeding**: Seeds mock data when DB is empty; optional full reset at startup via `app.seed.reset-on-startup=true`
 - **Employees**: 105 records
 - **Customers**: 107 records
 - **Companies**: 104 records
@@ -224,7 +224,8 @@ mvn spring-boot:run
 - Review job execution history in dashboard/API
 
 ### Data lifecycle
-- The app seeds deterministic mock data at startup
+- The app seeds deterministic mock data only when the database is empty
+- To force a full reset/re-seed on startup, set `app.seed.reset-on-startup=true`
 - If you need a clean local DB, run the VS Code task `Reset H2 DB files` or delete `data/camunda-worker-db.*`
 
 ### Safe public repo practice

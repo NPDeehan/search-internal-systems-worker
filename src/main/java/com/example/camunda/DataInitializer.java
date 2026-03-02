@@ -15,6 +15,7 @@ import com.example.camunda.repository.ExternalCompanyRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,14 +29,27 @@ public class DataInitializer {
                                EmployeeRepository employeeRepo,
                                ExternalCompanyRepository companyRepo,
                                AccountRepository accountRepo,
-                               CustomerAccountRepository customerAccountRepo) {
+                               CustomerAccountRepository customerAccountRepo,
+                               @Value("${app.seed.reset-on-startup:false}") boolean resetOnStartup) {
         return args -> {
-            // Re-seed deterministic mock data on every startup
-            customerAccountRepo.deleteAll();
-            accountRepo.deleteAll();
-            customerRepo.deleteAll();
-            employeeRepo.deleteAll();
-            companyRepo.deleteAll();
+            boolean hasExistingData =
+                    customerRepo.count() > 0 ||
+                    employeeRepo.count() > 0 ||
+                    companyRepo.count() > 0 ||
+                    accountRepo.count() > 0 ||
+                    customerAccountRepo.count() > 0;
+
+            if (hasExistingData && !resetOnStartup) {
+                return;
+            }
+
+            if (resetOnStartup) {
+                customerAccountRepo.deleteAll();
+                accountRepo.deleteAll();
+                customerRepo.deleteAll();
+                employeeRepo.deleteAll();
+                companyRepo.deleteAll();
+            }
 
             List<Employee> employees = seedEmployees(employeeRepo);
             List<Customer> customers = seedCustomers(customerRepo, employees);
