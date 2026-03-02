@@ -8,7 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.camunda.model.Customer;
 import com.example.camunda.exception.CustomerNotFoundException;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,8 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
-@Slf4j
 class CustomerSearchDebugTest {
+
+    private static final Logger log = LoggerFactory.getLogger(CustomerSearchDebugTest.class);
 
     @Autowired
     private CustomerService customerService;

@@ -5,14 +5,17 @@ import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
 import com.example.camunda.model.JobHistory;
+import com.example.camunda.model.Account;
+import com.example.camunda.model.CustomerAccount;
 import com.example.camunda.service.CustomerService;
 import com.example.camunda.service.EmployeeService;
 import com.example.camunda.service.CompanyService;
 import com.example.camunda.service.JobHistoryService;
 import com.example.camunda.service.ZeebeConnectionService;
+import com.example.camunda.service.AccountService;
 import com.example.camunda.ZeebeJobPollingService;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -31,21 +34,44 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
-@RequiredArgsConstructor
-@Slf4j
 public class DataController {
+    
+    private static final Logger log = LoggerFactory.getLogger(DataController.class);
     
     private final CustomerService customerService;
     private final EmployeeService employeeService;
     private final CompanyService companyService;
+    private final AccountService accountService;
     private final JobHistoryService jobHistoryService;
     private final ZeebeConnectionService zeebeConnectionService;
     private final ZeebeJobPollingService pollingService;
+
+    public DataController(CustomerService customerService,
+                         EmployeeService employeeService,
+                         CompanyService companyService,
+                         AccountService accountService,
+                         JobHistoryService jobHistoryService,
+                         ZeebeConnectionService zeebeConnectionService,
+                         ZeebeJobPollingService pollingService) {
+        this.customerService = customerService;
+        this.employeeService = employeeService;
+        this.companyService = companyService;
+        this.accountService = accountService;
+        this.jobHistoryService = jobHistoryService;
+        this.zeebeConnectionService = zeebeConnectionService;
+        this.pollingService = pollingService;
+    }
 
     @GetMapping("/customers")
     public List<Customer> getCustomers() {
         log.debug("Fetching all customers");
         return customerService.getAllCustomers();
+    }
+
+    @GetMapping("/customers/{id}")
+    public Customer getCustomerById(@PathVariable Long id) {
+        log.debug("Fetching customer with ID: {}", id);
+        return customerService.getCustomerById(id);
     }
 
     @GetMapping("/employees")
@@ -54,10 +80,66 @@ public class DataController {
         return employeeService.getAllEmployees();
     }
 
+    @GetMapping("/employees/{id}")
+    public Employee getEmployeeById(@PathVariable Long id) {
+        log.debug("Fetching employee with ID: {}", id);
+        return employeeService.getEmployeeById(id);
+    }
+
     @GetMapping("/companies")
     public List<ExternalCompany> getCompanies() {
         log.debug("Fetching all companies");
         return companyService.getAllCompanies();
+    }
+
+    @GetMapping("/companies/{id}")
+    public ExternalCompany getCompanyById(@PathVariable Long id) {
+        log.debug("Fetching company with ID: {}", id);
+        return companyService.getCompanyById(id);
+    }
+
+    @GetMapping("/accounts")
+    public List<Map<String, Object>> getAccounts() {
+        log.debug("Fetching all accounts with roles");
+        return accountService.getAllAccountsWithRoles().stream()
+                .map(match -> {
+                    Account account = match.account();
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("accountId", account.getAccountId());
+                    map.put("accountNumber", account.getAccountNumber());
+                    map.put("accountType", account.getAccountType() != null ? account.getAccountType().name() : "");
+                    map.put("balance", account.getBalance());
+                    map.put("currency", account.getCurrency());
+                    map.put("status", account.getStatus());
+                    map.put("interestRate", account.getInterestRate());
+                    map.put("openedDate", account.getOpenedDate());
+                    map.put("lastActivityDate", account.getLastActivityDate());
+                    String roles = match.roles().stream()
+                            .map(r -> "%s (%s)".formatted(r.customerName(), r.role() != null ? r.role().name() : ""))
+                            .collect(Collectors.joining(", "));
+                    map.put("roles", roles);
+                    return map;
+                })
+                .toList();
+    }
+
+    @GetMapping("/customer-accounts")
+    public List<Map<String, Object>> getCustomerAccounts() {
+        log.debug("Fetching all customer-account links");
+        return accountService.getAllCustomerAccountLinks().stream()
+                .map(link -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", link.getId());
+                    map.put("customerId", link.getCustomer() != null ? link.getCustomer().getCustomerId() : null);
+                    map.put("customerName", link.getCustomer() != null ? link.getCustomer().getCustomerName() : "");
+                    map.put("accountId", link.getAccount() != null ? link.getAccount().getAccountId() : null);
+                    map.put("accountNumber", link.getAccount() != null ? link.getAccount().getAccountNumber() : "");
+                    map.put("role", link.getRole() != null ? link.getRole().name() : "");
+                    map.put("createdAt", link.getCreatedAt());
+                    map.put("updatedAt", link.getUpdatedAt());
+                    return map;
+                })
+                .toList();
     }
 
     @GetMapping("/connection-status")
@@ -89,6 +171,7 @@ public class DataController {
         status.put("match-customer-with-dri", workerStatus);
         status.put("query-for-company", workerStatus);
         status.put("search-employee", workerStatus);
+        status.put("search-account", workerStatus);
         
         return status;
     }

@@ -6,8 +6,8 @@ import com.example.camunda.model.ExternalCompany;
 import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.EmployeeRepository;
 import com.example.camunda.repository.ExternalCompanyRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,15 +16,23 @@ import java.util.List;
 import java.util.Random;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class DataSeedingService implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataSeedingService.class);
 
     private final EmployeeRepository employeeRepository;
     private final CustomerRepository customerRepository;
     private final ExternalCompanyRepository externalCompanyRepository;
 
     private final Random random = new Random();
+
+    public DataSeedingService(EmployeeRepository employeeRepository,
+                             CustomerRepository customerRepository,
+                             ExternalCompanyRepository externalCompanyRepository) {
+        this.employeeRepository = employeeRepository;
+        this.customerRepository = customerRepository;
+        this.externalCompanyRepository = externalCompanyRepository;
+    }
 
     @Override
     @Transactional
@@ -113,6 +121,7 @@ public class DataSeedingService implements CommandLineRunner {
         Customer johnathanDoe = new Customer();
         johnathanDoe.setCustomerId(1L);
         johnathanDoe.setCustomerName("Johnathan Doe");
+        johnathanDoe.setAddress("1 Example Lane, Dublin, Ireland");
         johnathanDoe.setEmployeeId(getRandomElement(employeeIds));
         customerRepository.save(johnathanDoe);
         log.info("Seeded special customer: Johnathan Doe (ID: 1)");
@@ -150,6 +159,7 @@ public class DataSeedingService implements CommandLineRunner {
             Customer customer = new Customer();
             customer.setCustomerId(i);
             customer.setCustomerName(getRandomElement(customerFirstNames) + " " + getRandomElement(customerLastNames));
+            customer.setAddress((100 + i) + " Main Street, Dublin, Ireland");
             // Randomly assign to an employee
             customer.setEmployeeId(getRandomElement(employeeIds));
             
@@ -182,6 +192,7 @@ public class DataSeedingService implements CommandLineRunner {
             Customer johnathanDoe = new Customer();
             johnathanDoe.setCustomerId(maxId + 1);
             johnathanDoe.setCustomerName("Johnathan Doe");
+            johnathanDoe.setAddress("1 Example Lane, Dublin, Ireland");
             johnathanDoe.setEmployeeId(getRandomElement(availableEmployeeIds));
             
             customerRepository.save(johnathanDoe);

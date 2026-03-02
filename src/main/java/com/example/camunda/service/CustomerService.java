@@ -6,8 +6,8 @@ import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.EmployeeRepository;
 import com.example.camunda.exception.CustomerNotFoundException;
 import com.example.camunda.exception.EmployeeNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,17 +15,27 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class CustomerService {
+    
+    private static final Logger log = LoggerFactory.getLogger(CustomerService.class);
     
     private final CustomerRepository customerRepository;
     private final EmployeeRepository employeeRepository;
 
+    public CustomerService(CustomerRepository customerRepository, EmployeeRepository employeeRepository) {
+        this.customerRepository = customerRepository;
+        this.employeeRepository = employeeRepository;
+    }
+
     public List<Customer> getAllCustomers() {
         log.debug("Fetching all customers");
         return customerRepository.findAll();
+    }
+
+    public Customer getCustomerById(Long customerId) {
+        return customerRepository.findById(customerId)
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found with ID: " + customerId));
     }
 
     public Optional<Customer> findCustomer(Long customerId, String customerName) {
@@ -392,6 +402,9 @@ public class CustomerService {
     @Transactional
     public Customer saveCustomer(Customer customer) {
         log.info("Saving customer: {}", customer.getCustomerName());
+        if (customer.getEmployeeId() != null && !employeeRepository.existsById(customer.getEmployeeId())) {
+            throw new EmployeeNotFoundException("Employee not found with ID: " + customer.getEmployeeId());
+        }
         return customerRepository.save(customer);
     }
 

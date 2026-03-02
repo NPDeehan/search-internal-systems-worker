@@ -3,8 +3,8 @@ package com.example.camunda.service;
 import com.example.camunda.model.ExternalCompany;
 import com.example.camunda.repository.ExternalCompanyRepository;
 import com.example.camunda.exception.CompanyNotFoundException;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,16 +12,25 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 @Transactional(readOnly = true)
 public class CompanyService {
     
+    private static final Logger log = LoggerFactory.getLogger(CompanyService.class);
+    
     private final ExternalCompanyRepository companyRepository;
+
+    public CompanyService(ExternalCompanyRepository companyRepository) {
+        this.companyRepository = companyRepository;
+    }
 
     public List<ExternalCompany> getAllCompanies() {
         log.debug("Fetching all external companies");
         return companyRepository.findAll();
+    }
+
+    public ExternalCompany getCompanyById(Long companyId) {
+        return companyRepository.findById(companyId)
+                .orElseThrow(() -> new CompanyNotFoundException("Company not found with ID: " + companyId));
     }
 
     public List<ExternalCompany> findCompany(String companyName, String industry, String city, Long revenue) {

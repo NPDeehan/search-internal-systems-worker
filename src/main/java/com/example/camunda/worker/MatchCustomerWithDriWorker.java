@@ -4,8 +4,8 @@ import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
 import com.example.camunda.service.CustomerService;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -14,11 +14,15 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-@RequiredArgsConstructor
-@Slf4j
 public class MatchCustomerWithDriWorker {
     
+    private static final Logger log = LoggerFactory.getLogger(MatchCustomerWithDriWorker.class);
+    
     private final CustomerService customerService;
+
+    public MatchCustomerWithDriWorker(CustomerService customerService) {
+        this.customerService = customerService;
+    }
 
     public Map<String, Object> handleJob(final ActivatedJob job) {
         log.debug("Processing match-customer-with-dri job: {}", job.getKey());
@@ -51,6 +55,7 @@ public class MatchCustomerWithDriWorker {
             result.put("customerCount", 0);
             result.put("customerId", null);
             result.put("customerName", null);
+            result.put("customerAddress", null);
             result.put("employeeId", null);
             result.put("employeeName", null);
             result.put("employeeTitle", null);
@@ -103,6 +108,7 @@ public class MatchCustomerWithDriWorker {
                 result.put("customerCount", 0);
                 result.put("customerId", null);
                 result.put("customerName", null);
+                result.put("customerAddress", null);
                 result.put("employeeId", null);
                 result.put("employeeName", null);
                 result.put("employeeTitle", null);
@@ -121,6 +127,7 @@ public class MatchCustomerWithDriWorker {
                 Map<String, Object> customerData = new HashMap<>();
                 customerData.put("customerId", customer.getCustomerId());
                 customerData.put("customerName", customer.getCustomerName());
+                customerData.put("address", customer.getAddress());
                 customerData.put("employeeId", customer.getEmployeeId());
                 
                 Map<String, Object> employeeData = new HashMap<>();
@@ -165,6 +172,7 @@ public class MatchCustomerWithDriWorker {
                 
                 result.put("customerId", customer.getCustomerId());
                 result.put("customerName", customer.getCustomerName());
+                result.put("customerAddress", customer.getAddress());
                 result.put("employeeId", employee.getEmployeeId());
                 result.put("employeeName", employee.getFullName());
                 result.put("employeeTitle", employee.getJobTitle());
@@ -174,6 +182,7 @@ public class MatchCustomerWithDriWorker {
                 // Multiple customers found - clear individual fields
                 result.put("customerId", null);
                 result.put("customerName", null);
+                result.put("customerAddress", null);
                 result.put("employeeId", null);
                 result.put("employeeName", null);
                 result.put("employeeTitle", null);
@@ -199,6 +208,7 @@ public class MatchCustomerWithDriWorker {
             result.put("customerCount", 0);
             result.put("customerId", null);
             result.put("customerName", null);
+            result.put("customerAddress", null);
             result.put("employeeId", null);
             result.put("employeeName", null);
             result.put("employeeTitle", null);
