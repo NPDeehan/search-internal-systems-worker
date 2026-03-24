@@ -3,9 +3,12 @@ package com.example.camunda.controller;
 import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.service.CustomerService;
 import com.example.camunda.service.EmployeeService;
 import com.example.camunda.service.CompanyService;
+import com.example.camunda.service.AccountService;
+import com.example.camunda.service.CustomerAccountLinkService;
 import com.example.camunda.service.JobHistoryService;
 import com.example.camunda.service.ZeebeConnectionService;
 import com.example.camunda.ZeebeJobPollingService;
@@ -21,11 +24,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -49,6 +49,12 @@ class DataControllerTest {
 
     @MockBean
     private CompanyService companyService;
+
+    @MockBean
+    private AccountService accountService;
+
+    @MockBean
+    private CustomerAccountLinkService customerAccountLinkService;
 
     @MockBean
     private JobHistoryService jobHistoryService;
@@ -76,7 +82,10 @@ class DataControllerTest {
         testCustomer = new Customer();
         testCustomer.setCustomerId(1L);
         testCustomer.setCustomerName("Test Customer");
+        testCustomer.setAddress("123 Customer Street");
+        testCustomer.setEmail("test.customer@example.test");
         testCustomer.setEmployeeId(1L);
+        testCustomer.setTrustLevel(TrustLevel.L2);
         testCustomer.setCreatedAt(LocalDateTime.now());
         testCustomer.setUpdatedAt(LocalDateTime.now());
 

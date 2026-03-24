@@ -196,6 +196,12 @@ public class CompanyService {
     @Transactional
     public ExternalCompany saveCompany(ExternalCompany company) {
         log.info("Saving company: {}", company.getCompanyName());
+        if (company.getCompanyId() == null) {
+            Long maxCompanyId = companyRepository.findMaxCompanyId();
+            long nextCompanyId = (maxCompanyId == null ? 0L : maxCompanyId) + 1L;
+            company.setCompanyId(nextCompanyId);
+            log.info("Assigned generated companyId {} for new company {}", nextCompanyId, company.getCompanyName());
+        }
         return companyRepository.save(company);
     }
 

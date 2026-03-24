@@ -112,9 +112,10 @@ public class EmployeeService {
                 }
                 
                 // Fuzzy match on job title
-                if (lowerJobTitle != null && employee.getJobTitle() != null) {
-                    String empTitle = employee.getJobTitle().toLowerCase();
-                    if (isFuzzyMatch(lowerJobTitle, empTitle)) {
+                if (lowerJobTitle != null) {
+                    String empTitle = employee.getJobTitle() != null ? employee.getJobTitle().toLowerCase() : null;
+                    String empDept = employee.getDepartment() != null ? employee.getDepartment().toLowerCase() : null;
+                    if (isFuzzyMatch(lowerJobTitle, empTitle) || isFuzzyMatch(lowerJobTitle, empDept)) {
                         matches = true;
                     }
                 }
@@ -191,6 +192,12 @@ public class EmployeeService {
     @Transactional
     public Employee saveEmployee(Employee employee) {
         log.info("Saving employee: {}", employee.getFullName());
+        if (employee.getEmployeeId() == null) {
+            Long maxEmployeeId = employeeRepository.findMaxEmployeeId();
+            long nextEmployeeId = (maxEmployeeId == null ? 0L : maxEmployeeId) + 1L;
+            employee.setEmployeeId(nextEmployeeId);
+            log.info("Assigned generated employeeId {} for new employee {}", nextEmployeeId, employee.getFullName());
+        }
         return employeeRepository.save(employee);
     }
 

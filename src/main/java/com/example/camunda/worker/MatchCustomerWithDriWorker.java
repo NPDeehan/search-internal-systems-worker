@@ -56,6 +56,7 @@ public class MatchCustomerWithDriWorker {
             result.put("customerId", null);
             result.put("customerName", null);
             result.put("customerAddress", null);
+            result.put("customerTrustLevel", null);
             result.put("employeeId", null);
             result.put("employeeName", null);
             result.put("employeeTitle", null);
@@ -109,6 +110,7 @@ public class MatchCustomerWithDriWorker {
                 result.put("customerId", null);
                 result.put("customerName", null);
                 result.put("customerAddress", null);
+                result.put("customerTrustLevel", null);
                 result.put("employeeId", null);
                 result.put("employeeName", null);
                 result.put("employeeTitle", null);
@@ -128,6 +130,7 @@ public class MatchCustomerWithDriWorker {
                 customerData.put("customerId", customer.getCustomerId());
                 customerData.put("customerName", customer.getCustomerName());
                 customerData.put("address", customer.getAddress());
+                customerData.put("trustLevel", customer.getTrustLevel() != null ? customer.getTrustLevel().name() : "");
                 customerData.put("employeeId", customer.getEmployeeId());
                 
                 Map<String, Object> employeeData = new HashMap<>();
@@ -173,6 +176,7 @@ public class MatchCustomerWithDriWorker {
                 result.put("customerId", customer.getCustomerId());
                 result.put("customerName", customer.getCustomerName());
                 result.put("customerAddress", customer.getAddress());
+                result.put("customerTrustLevel", customer.getTrustLevel() != null ? customer.getTrustLevel().name() : null);
                 result.put("employeeId", employee.getEmployeeId());
                 result.put("employeeName", employee.getFullName());
                 result.put("employeeTitle", employee.getJobTitle());
@@ -183,6 +187,7 @@ public class MatchCustomerWithDriWorker {
                 result.put("customerId", null);
                 result.put("customerName", null);
                 result.put("customerAddress", null);
+                result.put("customerTrustLevel", null);
                 result.put("employeeId", null);
                 result.put("employeeName", null);
                 result.put("employeeTitle", null);
@@ -209,6 +214,7 @@ public class MatchCustomerWithDriWorker {
             result.put("customerId", null);
             result.put("customerName", null);
             result.put("customerAddress", null);
+            result.put("customerTrustLevel", null);
             result.put("employeeId", null);
             result.put("employeeName", null);
             result.put("employeeTitle", null);

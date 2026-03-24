@@ -3,6 +3,7 @@ package com.example.camunda.service;
 import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.EmployeeRepository;
 import com.example.camunda.repository.ExternalCompanyRepository;
@@ -17,6 +18,9 @@ import java.util.Random;
 
 @Service
 public class DataSeedingService implements CommandLineRunner {
+
+    private static final String NIAL_DEEHAN_NAME = "Niall Deehan";
+    private static final String NIAL_DEEHAN_EMAIL = "niall.deehan@camunda.com";
 
     private static final Logger log = LoggerFactory.getLogger(DataSeedingService.class);
 
@@ -49,6 +53,7 @@ public class DataSeedingService implements CommandLineRunner {
         
         // Always ensure Johnathan Doe exists
         ensureJohnathanDoeExists();
+        ensureNiallDeehanExists();
         
         if (externalCompanyRepository.count() < 100) {
             seedExternalCompanies();
@@ -123,6 +128,8 @@ public class DataSeedingService implements CommandLineRunner {
         johnathanDoe.setCustomerName("Johnathan Doe");
         johnathanDoe.setAddress("1 Example Lane, Dublin, Ireland");
         johnathanDoe.setEmployeeId(getRandomElement(employeeIds));
+        johnathanDoe.setTrustLevel(TrustLevel.L1);
+        johnathanDoe.setEmail(buildFakeCustomerEmail(johnathanDoe.getCustomerName(), johnathanDoe.getCustomerId()));
         customerRepository.save(johnathanDoe);
         log.info("Seeded special customer: Johnathan Doe (ID: 1)");
         
@@ -162,6 +169,8 @@ public class DataSeedingService implements CommandLineRunner {
             customer.setAddress((100 + i) + " Main Street, Dublin, Ireland");
             // Randomly assign to an employee
             customer.setEmployeeId(getRandomElement(employeeIds));
+            customer.setTrustLevel(getRandomTrustLevel());
+            customer.setEmail(buildFakeCustomerEmail(customer.getCustomerName(), customer.getCustomerId()));
             
             customerRepository.save(customer);
         }
@@ -194,11 +203,54 @@ public class DataSeedingService implements CommandLineRunner {
             johnathanDoe.setCustomerName("Johnathan Doe");
             johnathanDoe.setAddress("1 Example Lane, Dublin, Ireland");
             johnathanDoe.setEmployeeId(getRandomElement(availableEmployeeIds));
+            johnathanDoe.setTrustLevel(TrustLevel.L1);
+            johnathanDoe.setEmail(buildFakeCustomerEmail(johnathanDoe.getCustomerName(), johnathanDoe.getCustomerId()));
             
             customerRepository.save(johnathanDoe);
             log.info("Created Johnathan Doe customer with ID: {}", johnathanDoe.getCustomerId());
         } else {
             log.info("Johnathan Doe already exists in customer database");
+        }
+    }
+
+    private void ensureNiallDeehanExists() {
+        log.info("Ensuring {} exists in customer database...", NIAL_DEEHAN_NAME);
+
+        List<Customer> existingCustomers = customerRepository.findAll();
+        Customer niall = existingCustomers.stream()
+                .filter(customer -> customer.getCustomerName() != null && NIAL_DEEHAN_NAME.equalsIgnoreCase(customer.getCustomerName().trim()))
+                .findFirst()
+                .orElse(null);
+
+        if (niall == null) {
+            Long maxId = existingCustomers.stream()
+                    .mapToLong(Customer::getCustomerId)
+                    .max()
+                    .orElse(0L);
+
+            List<Long> availableEmployeeIds = employeeRepository.findAll().stream()
+                    .map(Employee::getEmployeeId)
+                    .toList();
+
+            Customer niallCustomer = new Customer();
+            niallCustomer.setCustomerId(maxId + 1);
+            niallCustomer.setCustomerName(NIAL_DEEHAN_NAME);
+            niallCustomer.setAddress("14 Fitzwilliam Square, Dublin, Ireland");
+            niallCustomer.setEmployeeId(getRandomElement(availableEmployeeIds));
+            niallCustomer.setTrustLevel(TrustLevel.L1);
+            niallCustomer.setEmail(NIAL_DEEHAN_EMAIL);
+
+            customerRepository.save(niallCustomer);
+            log.info("Created {} customer with ID: {}", NIAL_DEEHAN_NAME, niallCustomer.getCustomerId());
+            return;
+        }
+
+        if (!NIAL_DEEHAN_EMAIL.equalsIgnoreCase(niall.getEmail())) {
+            niall.setEmail(NIAL_DEEHAN_EMAIL);
+            customerRepository.save(niall);
+            log.info("Updated {} email to {}", NIAL_DEEHAN_NAME, NIAL_DEEHAN_EMAIL);
+        } else {
+            log.info("{} already exists with required email", NIAL_DEEHAN_NAME);
         }
     }
 
@@ -271,6 +323,25 @@ public class DataSeedingService implements CommandLineRunner {
     
     private <T> T getRandomElement(List<T> list) {
         return list.get(random.nextInt(list.size()));
+    }
+
+    private TrustLevel getRandomTrustLevel() {
+        return switch (random.nextInt(3)) {
+            case 0 -> TrustLevel.L1;
+            case 1 -> TrustLevel.L2;
+            default -> TrustLevel.L3;
+        };
+    }
+
+    private String buildFakeCustomerEmail(String fullName, Long customerId) {
+        String safeName = fullName == null ? "customer" : fullName.toLowerCase()
+                .replaceAll("[^a-z0-9]+", ".")
+                .replaceAll("(^\\.+|\\.+$)", "");
+        if (safeName.isBlank()) {
+            safeName = "customer";
+        }
+        long safeId = customerId == null ? 0L : customerId;
+        return safeName + "." + safeId + "@example.test";
     }
 
     private String generatePhoneNumber() {

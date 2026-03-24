@@ -2,6 +2,7 @@ package com.example.camunda.worker;
 
 import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.service.CustomerService;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,14 +17,13 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 
 @ExtendWith(MockitoExtension.class)
 public class EnhancedMatchCustomerWithDriWorkerTest {
 
-    @Mock(lenient = true)  // Use lenient to avoid strict stubbing issues
+    @Mock
     private CustomerService customerService;
 
     @Mock
@@ -40,7 +40,10 @@ public class EnhancedMatchCustomerWithDriWorkerTest {
         testCustomer = new Customer();
         testCustomer.setCustomerId(123L);
         testCustomer.setCustomerName("Test Customer");
+        testCustomer.setAddress("12 Test Lane");
+        testCustomer.setEmail("test.customer@example.test");
         testCustomer.setEmployeeId(456L);
+        testCustomer.setTrustLevel(TrustLevel.L2);
 
         testEmployee = new Employee();
         testEmployee.setEmployeeId(456L);
@@ -80,6 +83,7 @@ public class EnhancedMatchCustomerWithDriWorkerTest {
         // Check individual fields for backward compatibility (single customer)
         assertEquals(123L, result.get("customerId"));
         assertEquals("Test Customer", result.get("customerName"));
+        assertEquals("L2", result.get("customerTrustLevel"));
         assertEquals("John Doe", result.get("employeeName"));
         assertEquals("Account Manager", result.get("employeeTitle"));
         
@@ -95,6 +99,7 @@ public class EnhancedMatchCustomerWithDriWorkerTest {
         
         assertEquals(123L, customer.get("customerId"));
         assertEquals("Test Customer", customer.get("customerName"));
+        assertEquals("L2", customer.get("trustLevel"));
         assertEquals("John Doe", employee.get("fullName"));
         assertEquals("Account Manager", employee.get("jobTitle"));
     }
@@ -233,7 +238,10 @@ public class EnhancedMatchCustomerWithDriWorkerTest {
         Customer testCustomer2 = new Customer();
         testCustomer2.setCustomerId(124L);
         testCustomer2.setCustomerName("John Smith");
+        testCustomer2.setAddress("44 Main Street");
+        testCustomer2.setEmail("john.smith@example.test");
         testCustomer2.setEmployeeId(457L);
+        testCustomer2.setTrustLevel(TrustLevel.L3);
         
         Employee testEmployee2 = new Employee();
         testEmployee2.setEmployeeId(457L);

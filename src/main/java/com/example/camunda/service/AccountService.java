@@ -1,5 +1,6 @@
 package com.example.camunda.service;
 
+import com.example.camunda.exception.AccountNotFoundException;
 import com.example.camunda.model.Account;
 import com.example.camunda.model.AccountRole;
 import com.example.camunda.model.CustomerAccount;
@@ -161,5 +162,44 @@ public class AccountService {
 
     public List<CustomerAccount> getAllCustomerAccountLinks() {
         return customerAccountRepository.findAllWithCustomerAndAccount();
+    }
+
+    public Optional<Account> findAccountById(Long accountId) {
+        log.debug("Finding account by ID: {}", accountId);
+        if (accountId == null) {
+            return Optional.empty();
+        }
+        return accountRepository.findById(accountId);
+    }
+
+    public Account getAccountById(Long accountId) {
+        return findAccountById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with ID: " + accountId));
+    }
+
+    @Transactional
+    public Account saveAccount(Account account) {
+        log.info("Saving account: {}", account != null ? account.getAccountNumber() : null);
+        if (account != null && account.getAccountId() == null) {
+            Long maxAccountId = accountRepository.findMaxAccountId();
+            long nextAccountId = (maxAccountId == null ? 0L : maxAccountId) + 1L;
+            account.setAccountId(nextAccountId);
+            log.info("Assigned generated accountId {} for new account {}", nextAccountId, account.getAccountNumber());
+        }
+        return accountRepository.save(account);
+    }
+
+    @Transactional
+    public void deleteAccount(Long accountId) {
+        log.info("Deleting account with ID: {}", accountId);
+        if (!accountRepository.existsById(accountId)) {
+            throw new AccountNotFoundException("Account not found with ID: " + accountId);
+        }
+        List<CustomerAccount> links = customerAccountRepository.findByAccount_AccountId(accountId);
+        if (!links.isEmpty()) {
+            log.info("Removing {} customer-account link(s) for account ID {} before account delete", links.size(), accountId);
+            customerAccountRepository.deleteAll(links);
+        }
+        accountRepository.deleteById(accountId);
     }
 }

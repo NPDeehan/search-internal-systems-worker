@@ -21,8 +21,11 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     @Query("SELECT e FROM Employee e WHERE " +
            "(:fullName IS NULL OR LOWER(e.fullName) LIKE LOWER(CONCAT('%', :fullName, '%'))) AND " +
            "(:department IS NULL OR LOWER(e.department) = LOWER(:department)) AND " +
-           "(:jobTitle IS NULL OR LOWER(e.jobTitle) LIKE LOWER(CONCAT('%', :jobTitle, '%')))")
+            "(:jobTitle IS NULL OR LOWER(e.jobTitle) LIKE LOWER(CONCAT('%', :jobTitle, '%')) OR LOWER(e.department) LIKE LOWER(CONCAT('%', :jobTitle, '%')))")
     List<Employee> searchEmployees(@Param("fullName") String fullName, 
                                   @Param("department") String department, 
                                   @Param("jobTitle") String jobTitle);
+
+    @Query("SELECT COALESCE(MAX(e.employeeId), 0) FROM Employee e")
+    Long findMaxEmployeeId();
 }

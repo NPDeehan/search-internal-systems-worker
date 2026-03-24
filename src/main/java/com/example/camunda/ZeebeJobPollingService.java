@@ -6,6 +6,11 @@ import com.example.camunda.worker.MatchCustomerWithDriWorker;
 import com.example.camunda.worker.QueryForCompanyWorker;
 import com.example.camunda.worker.EmployeeSearchWorker;
 import com.example.camunda.worker.AccountSearchWorker;
+import com.example.camunda.worker.AccountCrudWorker;
+import com.example.camunda.worker.CompanyCrudWorker;
+import com.example.camunda.worker.CustomerCrudWorker;
+import com.example.camunda.worker.CustomerAccountLinkWorker;
+import com.example.camunda.worker.EmployeeCrudWorker;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -29,6 +34,11 @@ public class ZeebeJobPollingService {
     private final QueryForCompanyWorker companyWorker;
     private final EmployeeSearchWorker employeeSearchWorker;
     private final AccountSearchWorker accountSearchWorker;
+    private final AccountCrudWorker accountCrudWorker;
+    private final CustomerCrudWorker customerCrudWorker;
+    private final EmployeeCrudWorker employeeCrudWorker;
+    private final CompanyCrudWorker companyCrudWorker;
+    private final CustomerAccountLinkWorker customerAccountLinkWorker;
     private final JobHistoryService jobHistoryService;
     
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -38,12 +48,22 @@ public class ZeebeJobPollingService {
                                   QueryForCompanyWorker companyWorker,
                                   EmployeeSearchWorker employeeSearchWorker,
                                   AccountSearchWorker accountSearchWorker,
+                                  AccountCrudWorker accountCrudWorker,
+                                  CustomerCrudWorker customerCrudWorker,
+                                  EmployeeCrudWorker employeeCrudWorker,
+                                  CompanyCrudWorker companyCrudWorker,
+                                  CustomerAccountLinkWorker customerAccountLinkWorker,
                                   JobHistoryService jobHistoryService) {
         this.zeebeConnectionService = zeebeConnectionService;
         this.matchWorker = matchWorker;
         this.companyWorker = companyWorker;
         this.employeeSearchWorker = employeeSearchWorker;
         this.accountSearchWorker = accountSearchWorker;
+        this.accountCrudWorker = accountCrudWorker;
+        this.customerCrudWorker = customerCrudWorker;
+        this.employeeCrudWorker = employeeCrudWorker;
+        this.companyCrudWorker = companyCrudWorker;
+        this.customerAccountLinkWorker = customerAccountLinkWorker;
         this.jobHistoryService = jobHistoryService;
     }
 
@@ -88,6 +108,46 @@ public class ZeebeJobPollingService {
     public void pollAccountSearchJobs() {
         if (isRunning.get()) {
             pollJobs("search-account", accountSearchWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollAccountCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-account-record", accountCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollCustomerCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-customer-record", customerCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollEmployeeCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-employee-record", employeeCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollCompanyCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-company-record", companyCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollCustomerAccountLinkJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-customer-account-link", customerAccountLinkWorker::handleJob);
         }
     }
 

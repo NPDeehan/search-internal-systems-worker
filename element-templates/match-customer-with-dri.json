@@ -3,7 +3,7 @@
   "name": "Match Customer with DRI",
   "id": "com.example.camunda.match-customer-with-dri",
   "description": "Service task to match a customer with their designated relationship individual (DRI)",
-  "version": 2,
+  "version": 5,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -37,7 +37,33 @@
       }
     },
     {
-      "id": "customerId",
+      "id": "lookupMode",
+      "label": "Lookup Mode",
+      "description": "Choose how to identify the customer.",
+      "type": "Dropdown",
+      "value": "ID_OR_NAME",
+      "choices": [
+        {
+          "name": "Customer ID",
+          "value": "CUSTOMER_ID"
+        },
+        {
+          "name": "Customer Name",
+          "value": "CUSTOMER_NAME"
+        },
+        {
+          "name": "ID or Name (Flexible)",
+          "value": "ID_OR_NAME"
+        }
+      ],
+      "group": "input",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "lookupMode"
+      }
+    },
+    {
+      "id": "customerIdById",
       "label": "Customer ID",
       "description": "The unique identifier of the customer to match. Can be a static value or FEEL expression (e.g., =customerId, =order.customerId)",
       "type": "Text",
@@ -48,11 +74,36 @@
         "name": "customerId"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "CUSTOMER_ID",
+        "type": "simple"
       }
     },
     {
-      "id": "customerName",
+      "id": "customerIdFlexible",
+      "label": "Customer ID",
+      "description": "Optional customer ID for flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "customerId"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "ID_OR_NAME",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "customerNameByName",
       "label": "Customer Name",
       "description": "The name of the customer to match (alternative to Customer ID). Can be a static value or FEEL expression (e.g., =customerName, =customer.name)",
       "type": "Text",
@@ -63,55 +114,116 @@
         "name": "customerName"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "CUSTOMER_NAME",
+        "type": "simple"
       }
     },
     {
-      "id": "allowMultiple",
-      "label": "Allow Multiple Results",
-      "description": "When true, allows multiple customer matches to be returned. When false or not set, returns only the first match found.",
-      "type": "Dropdown",
-      "choices": [
-        {
-          "name": "False (Return single match)",
-          "value": "false"
-        },
-        {
-          "name": "True (Return multiple matches)",
-          "value": "true"
-        }
-      ],
+      "id": "customerNameFlexible",
+      "label": "Customer Name",
+      "description": "Optional customer name for flexible mode.",
+      "type": "Text",
       "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "customerName"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "ID_OR_NAME",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "allowMultipleByName",
+      "label": "Allow Multiple Results",
+      "description": "Controls whether multiple customer matches can be returned. Use true or false, or FEEL runtime mapping (for example: =allowMultipleVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
       "binding": {
         "type": "zeebe:input",
         "name": "allowMultiple"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "CUSTOMER_NAME",
+        "type": "simple"
       }
     },
     {
-      "id": "fuzzyMatching",
-      "label": "Fuzzy Matching",
-      "description": "When true, enables fuzzy/partial matching for customer searches using similarity algorithms. When false or not set, uses exact matching only.",
-      "type": "Dropdown",
-      "choices": [
-        {
-          "name": "False (Exact matching)",
-          "value": "false"
-        },
-        {
-          "name": "True (Fuzzy matching)",
-          "value": "true"
-        }
-      ],
+      "id": "allowMultipleFlexible",
+      "label": "Allow Multiple Results",
+      "description": "Optional in flexible mode. Use true or false, or FEEL runtime mapping (for example: =allowMultipleVar).",
+      "type": "Text",
       "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "allowMultiple"
+      },
+      "constraints": {
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "ID_OR_NAME",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "fuzzyMatchingByName",
+      "label": "Fuzzy Matching",
+      "description": "Enable fuzzy/partial matching. Use true or false, or FEEL runtime mapping (for example: =fuzzyMatchingVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
       "binding": {
         "type": "zeebe:input",
         "name": "fuzzyMatching"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "CUSTOMER_NAME",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "fuzzyMatchingFlexible",
+      "label": "Fuzzy Matching",
+      "description": "Enable fuzzy matching in flexible mode. Use true or false, or FEEL runtime mapping (for example: =fuzzyMatchingVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "fuzzyMatching"
+      },
+      "constraints": {
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "lookupMode",
+        "equals": "ID_OR_NAME",
+        "type": "simple"
       }
     },
     {
@@ -166,6 +278,19 @@
         "type": "zeebe:output",
         "source": "=customerAddress",
         "target": "customerAddress"
+      }
+    },
+    {
+      "id": "customerTrustLevelOutput",
+      "label": "Customer Trust Level Output",
+      "description": "Process variable to store the matched customer trust level (L1, L2, or L3)",
+      "type": "String",
+      "group": "output",
+      "value": "customerTrustLevel",
+      "binding": {
+        "type": "zeebe:output",
+        "source": "=customerTrustLevel",
+        "target": "customerTrustLevel"
       }
     },
     {

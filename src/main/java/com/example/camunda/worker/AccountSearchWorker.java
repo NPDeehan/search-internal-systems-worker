@@ -31,12 +31,9 @@ public class AccountSearchWorker {
         Map<String, Object> variables = job.getVariablesAsMap();
         log.debug("Raw variables received: {}", variables);
 
-        Long accountId = extractLong(variables.get("accountId"));
-        if (accountId == null) {
-            accountId = extractLong(variables.get("customerAccountId"));
-        }
-        String accountNumber = extractString(variables.get("accountNumber"));
-        Long customerId = extractLong(variables.get("customerId"));
+        Long accountId = extractLongFromKeys(variables, "accountId", "customerAccountId");
+        String accountNumber = extractStringFromKeys(variables, "accountNumber");
+        Long customerId = extractLongFromKeys(variables, "customerId", "customerID", "customer_id");
 
         log.info("Searching accounts - accountId: {}, accountNumber: {}, customerId: {}", accountId, accountNumber, customerId);
 
@@ -250,16 +247,46 @@ public class AccountSearchWorker {
 
     private Map<String, Object> extractSearchParameters(Map<String, Object> variables) {
         Map<String, Object> params = new HashMap<>();
-        Long accountId = extractLong(variables.get("accountId"));
-        if (accountId == null) {
-            accountId = extractLong(variables.get("customerAccountId"));
-        }
-        String accountNumber = extractString(variables.get("accountNumber"));
-        Long customerId = extractLong(variables.get("customerId"));
+        Long accountId = extractLongFromKeys(variables, "accountId", "customerAccountId");
+        String accountNumber = extractStringFromKeys(variables, "accountNumber");
+        Long customerId = extractLongFromKeys(variables, "customerId", "customerID", "customer_id");
         if (accountId != null) params.put("accountId", accountId);
         if (!isEmpty(accountNumber)) params.put("accountNumber", accountNumber);
         if (customerId != null) params.put("customerId", customerId);
         return params;
+    }
+
+    private Long extractLongFromKeys(Map<String, Object> variables, String... keys) {
+        for (String key : keys) {
+            Long value = extractLong(getVariableValue(variables, key));
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String extractStringFromKeys(Map<String, Object> variables, String... keys) {
+        for (String key : keys) {
+            String value = extractString(getVariableValue(variables, key));
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private Object getVariableValue(Map<String, Object> variables, String key) {
+        if (variables.containsKey(key)) {
+            return variables.get(key);
+        }
+
+        Object arguments = variables.get("arguments");
+        if (arguments instanceof Map<?, ?> argumentMap && argumentMap.containsKey(key)) {
+            return argumentMap.get(key);
+        }
+
+        return null;
     }
 
     private String extractString(Object value) {
