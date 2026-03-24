@@ -2,7 +2,6 @@ package com.example.camunda.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import org.springframework.data.annotation.CreatedDate;
@@ -17,7 +16,6 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 public class Employee {
     @Id
-    @NotNull(message = "Employee ID is required")
     @Positive(message = "Employee ID must be positive")
     private Long employeeId;
     

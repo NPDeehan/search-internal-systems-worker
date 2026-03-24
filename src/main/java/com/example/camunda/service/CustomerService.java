@@ -402,6 +402,12 @@ public class CustomerService {
     @Transactional
     public Customer saveCustomer(Customer customer) {
         log.info("Saving customer: {}", customer.getCustomerName());
+        if (customer.getCustomerId() == null) {
+            Long maxCustomerId = customerRepository.findMaxCustomerId();
+            long nextCustomerId = (maxCustomerId == null ? 0L : maxCustomerId) + 1L;
+            customer.setCustomerId(nextCustomerId);
+            log.info("Assigned generated customerId {} for new customer {}", nextCustomerId, customer.getCustomerName());
+        }
         if (customer.getEmployeeId() != null && !employeeRepository.existsById(customer.getEmployeeId())) {
             throw new EmployeeNotFoundException("Employee not found with ID: " + customer.getEmployeeId());
         }

@@ -6,10 +6,12 @@ import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
 import com.example.camunda.model.JobHistory;
 import com.example.camunda.model.Account;
+import com.example.camunda.model.AccountRole;
 import com.example.camunda.model.CustomerAccount;
 import com.example.camunda.service.CustomerService;
 import com.example.camunda.service.EmployeeService;
 import com.example.camunda.service.CompanyService;
+import com.example.camunda.service.CustomerAccountLinkService;
 import com.example.camunda.service.JobHistoryService;
 import com.example.camunda.service.ZeebeConnectionService;
 import com.example.camunda.service.AccountService;
@@ -42,6 +44,7 @@ public class DataController {
     private final EmployeeService employeeService;
     private final CompanyService companyService;
     private final AccountService accountService;
+    private final CustomerAccountLinkService customerAccountLinkService;
     private final JobHistoryService jobHistoryService;
     private final ZeebeConnectionService zeebeConnectionService;
     private final ZeebeJobPollingService pollingService;
@@ -50,6 +53,7 @@ public class DataController {
                          EmployeeService employeeService,
                          CompanyService companyService,
                          AccountService accountService,
+                         CustomerAccountLinkService customerAccountLinkService,
                          JobHistoryService jobHistoryService,
                          ZeebeConnectionService zeebeConnectionService,
                          ZeebeJobPollingService pollingService) {
@@ -57,6 +61,7 @@ public class DataController {
         this.employeeService = employeeService;
         this.companyService = companyService;
         this.accountService = accountService;
+        this.customerAccountLinkService = customerAccountLinkService;
         this.jobHistoryService = jobHistoryService;
         this.zeebeConnectionService = zeebeConnectionService;
         this.pollingService = pollingService;
@@ -123,6 +128,12 @@ public class DataController {
                 .toList();
     }
 
+    @GetMapping("/accounts/{id}")
+    public Account getAccountById(@PathVariable Long id) {
+        log.debug("Fetching account with ID: {}", id);
+        return accountService.getAccountById(id);
+    }
+
     @GetMapping("/customer-accounts")
     public List<Map<String, Object>> getCustomerAccounts() {
         log.debug("Fetching all customer-account links");
@@ -140,6 +151,40 @@ public class DataController {
                     return map;
                 })
                 .toList();
+    }
+
+    @PostMapping("/customer-accounts")
+    public Map<String, Object> createCustomerAccountLink(@RequestBody Map<String, Object> request) {
+        Long accountId = extractRequiredLong(request.get("accountId"), "accountId");
+        Long customerId = extractRequiredLong(request.get("customerId"), "customerId");
+        AccountRole role = extractRequiredRole(request.get("role"));
+
+        log.info("Creating/upserting customer-account link accountId={}, customerId={}, role={}", accountId, customerId, role);
+        CustomerAccountLinkService.UpsertResult upsertResult = customerAccountLinkService.upsertRole(accountId, customerId, role);
+        return buildCustomerAccountLinkResponse(upsertResult.link(), upsertResult.created() ? "CREATED" : "UPDATED");
+    }
+
+    @PutMapping("/customer-accounts")
+    public Map<String, Object> updateCustomerAccountLinkRole(@RequestBody Map<String, Object> request) {
+        Long accountId = extractRequiredLong(request.get("accountId"), "accountId");
+        Long customerId = extractRequiredLong(request.get("customerId"), "customerId");
+        AccountRole role = extractRequiredRole(request.get("role"));
+
+        log.info("Updating/upserting customer-account link role accountId={}, customerId={}, role={}", accountId, customerId, role);
+        CustomerAccountLinkService.UpsertResult upsertResult = customerAccountLinkService.upsertRole(accountId, customerId, role);
+        return buildCustomerAccountLinkResponse(upsertResult.link(), upsertResult.created() ? "CREATED" : "UPDATED");
+    }
+
+    @DeleteMapping("/customer-accounts/{accountId}/{customerId}")
+    public Map<String, String> deleteCustomerAccountLink(@PathVariable Long accountId, @PathVariable Long customerId) {
+        log.info("Removing customer-account link accountId={}, customerId={}", accountId, customerId);
+        boolean removed = customerAccountLinkService.removeLink(accountId, customerId);
+        if (!removed) {
+            throw new IllegalArgumentException("Customer-account link not found for accountId=" + accountId + " and customerId=" + customerId);
+        }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Customer-account link removed successfully");
+        return response;
     }
 
     @GetMapping("/connection-status")
@@ -172,6 +217,11 @@ public class DataController {
         status.put("query-for-company", workerStatus);
         status.put("search-employee", workerStatus);
         status.put("search-account", workerStatus);
+        status.put("manage-account-record", workerStatus);
+        status.put("manage-customer-record", workerStatus);
+        status.put("manage-employee-record", workerStatus);
+        status.put("manage-company-record", workerStatus);
+        status.put("manage-customer-account-link", workerStatus);
         
         return status;
     }
@@ -264,5 +314,78 @@ public class DataController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Company deleted successfully");
         return response;
+    }
+
+    // CRUD Operations for Accounts
+    @PostMapping("/accounts")
+    public Account createAccount(@Valid @RequestBody Account account) {
+        log.info("Creating new account: {}", account.getAccountNumber());
+        return accountService.saveAccount(account);
+    }
+
+    @PutMapping("/accounts/{id}")
+    public Account updateAccount(@PathVariable Long id, @Valid @RequestBody Account account) {
+        log.info("Updating account with ID: {}", id);
+        account.setAccountId(id);
+        return accountService.saveAccount(account);
+    }
+
+    @DeleteMapping("/accounts/{id}")
+    public Map<String, String> deleteAccount(@PathVariable Long id) {
+        log.info("Deleting account with ID: {}", id);
+        accountService.deleteAccount(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Account deleted successfully");
+        return response;
+    }
+
+    private Map<String, Object> buildCustomerAccountLinkResponse(CustomerAccount link, String action) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", link.getId());
+        response.put("accountId", link.getAccount() != null ? link.getAccount().getAccountId() : null);
+        response.put("accountNumber", link.getAccount() != null ? link.getAccount().getAccountNumber() : null);
+        response.put("customerId", link.getCustomer() != null ? link.getCustomer().getCustomerId() : null);
+        response.put("customerName", link.getCustomer() != null ? link.getCustomer().getCustomerName() : null);
+        response.put("role", link.getRole() != null ? link.getRole().name() : null);
+        response.put("action", action);
+        response.put("createdAt", link.getCreatedAt());
+        response.put("updatedAt", link.getUpdatedAt());
+        return response;
+    }
+
+    private Long extractRequiredLong(Object value, String fieldName) {
+        if (value == null) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String str) {
+            String trimmed = str.trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException(fieldName + " is required");
+            }
+            try {
+                return Long.parseLong(trimmed);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException(fieldName + " must be a valid number");
+            }
+        }
+        throw new IllegalArgumentException(fieldName + " must be a valid number");
+    }
+
+    private AccountRole extractRequiredRole(Object value) {
+        if (value == null) {
+            throw new IllegalArgumentException("role is required (OWNER, ADMIN, NAMED)");
+        }
+        String roleValue = value.toString().trim();
+        if (roleValue.isEmpty()) {
+            throw new IllegalArgumentException("role is required (OWNER, ADMIN, NAMED)");
+        }
+        try {
+            return AccountRole.valueOf(roleValue.toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("role must be one of OWNER, ADMIN, NAMED");
+        }
     }
 }

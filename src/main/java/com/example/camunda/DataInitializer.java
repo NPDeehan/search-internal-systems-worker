@@ -7,6 +7,7 @@ import com.example.camunda.model.Customer;
 import com.example.camunda.model.CustomerAccount;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.repository.AccountRepository;
 import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.CustomerAccountRepository;
@@ -24,6 +25,10 @@ import java.util.List;
 
 @Configuration
 public class DataInitializer {
+
+    private static final String NIAL_DEEHAN_NAME = "Niall Deehan";
+    private static final String NIAL_DEEHAN_EMAIL = "niall.deehan@camunda.com";
+
     @Bean
     CommandLineRunner initData(CustomerRepository customerRepo,
                                EmployeeRepository employeeRepo,
@@ -32,16 +37,8 @@ public class DataInitializer {
                                CustomerAccountRepository customerAccountRepo,
                                @Value("${app.seed.reset-on-startup:false}") boolean resetOnStartup) {
         return args -> {
-            boolean hasExistingData =
-                    customerRepo.count() > 0 ||
-                    employeeRepo.count() > 0 ||
-                    companyRepo.count() > 0 ||
-                    accountRepo.count() > 0 ||
-                    customerAccountRepo.count() > 0;
-
-            if (hasExistingData && !resetOnStartup) {
-                return;
-            }
+            backfillCustomerTrustLevels(customerRepo);
+            backfillCustomerEmails(customerRepo);
 
             if (resetOnStartup) {
                 customerAccountRepo.deleteAll();
@@ -51,10 +48,24 @@ public class DataInitializer {
                 companyRepo.deleteAll();
             }
 
-            List<Employee> employees = seedEmployees(employeeRepo);
-            List<Customer> customers = seedCustomers(customerRepo, employees);
-            seedExternalCompanies(companyRepo);
-            seedAccountsAndLinks(accountRepo, customerAccountRepo, customers);
+            List<Employee> employees = employeeRepo.count() == 0
+                    ? seedEmployees(employeeRepo)
+                    : employeeRepo.findAll();
+
+            List<Customer> customers = customerRepo.count() == 0
+                    ? seedCustomers(customerRepo, employees)
+                    : customerRepo.findAll();
+
+            if (companyRepo.count() == 0) {
+                seedExternalCompanies(companyRepo);
+            }
+
+            // Always seed accounts/links when missing, even if employees/customers were seeded elsewhere.
+            if (accountRepo.count() == 0 || customerAccountRepo.count() == 0) {
+                customerAccountRepo.deleteAll();
+                accountRepo.deleteAll();
+                seedAccountsAndLinks(accountRepo, customerAccountRepo, customers);
+            }
         };
     }
 
@@ -96,13 +107,13 @@ public class DataInitializer {
     private List<Customer> seedCustomers(CustomerRepository customerRepo, List<Employee> employees) {
         List<Customer> customers = new ArrayList<>();
 
-        customers.add(createCustomer(100L, "Niall Deehan", "14 Fitzwilliam Square, Dublin, Ireland", 1L));
-        customers.add(createCustomer(150L, "John Doe", "77 River Lane, Cork, Ireland", 2L));
-        customers.add(createCustomer(200L, "Sarah Connor", "22 Rue Saint-Honore, Paris, France", 2L));
-        customers.add(createCustomer(300L, "James Patel", "9 Unter den Linden, Berlin, Germany", 3L));
-        customers.add(createCustomer(400L, "Olivia Murphy", "31 Gran Via, Madrid, Spain", 4L));
-        customers.add(createCustomer(500L, "Liam O'Connor", "8 Via Roma, Milan, Italy", 5L));
-        customers.add(createCustomer(600L, "Ava Thompson", "56 Damrak, Amsterdam, Netherlands", 1L));
+        customers.add(createCustomer(100L, "Niall Deehan", "14 Fitzwilliam Square, Dublin, Ireland", 1L, TrustLevel.L1, NIAL_DEEHAN_EMAIL));
+        customers.add(createCustomer(150L, "John Doe", "77 River Lane, Cork, Ireland", 2L, TrustLevel.L2, buildFakeCustomerEmail("John Doe", 150L)));
+        customers.add(createCustomer(200L, "Sarah Connor", "22 Rue Saint-Honore, Paris, France", 2L, TrustLevel.L3, buildFakeCustomerEmail("Sarah Connor", 200L)));
+        customers.add(createCustomer(300L, "James Patel", "9 Unter den Linden, Berlin, Germany", 3L, TrustLevel.L1, buildFakeCustomerEmail("James Patel", 300L)));
+        customers.add(createCustomer(400L, "Olivia Murphy", "31 Gran Via, Madrid, Spain", 4L, TrustLevel.L2, buildFakeCustomerEmail("Olivia Murphy", 400L)));
+        customers.add(createCustomer(500L, "Liam O'Connor", "8 Via Roma, Milan, Italy", 5L, TrustLevel.L3, buildFakeCustomerEmail("Liam O'Connor", 500L)));
+        customers.add(createCustomer(600L, "Ava Thompson", "56 Damrak, Amsterdam, Netherlands", 1L, TrustLevel.L1, buildFakeCustomerEmail("Ava Thompson", 600L)));
 
         String[] euFirstNames = {"Anna", "Marco", "Isla", "Gregor", "Ines", "Pavel", "Maeve", "Jonas", "Clara", "Eoin"};
         String[] euLastNames = {"Schmidt", "Costa", "Doyle", "Nowak", "Van Dijk", "Petrov", "Larsen", "Moreno", "Bianchi", "Ivanova"};
@@ -122,7 +133,13 @@ public class DataInitializer {
             String city = european ? euCities[i % euCities.length] : nonEuCities[i % nonEuCities.length];
             String country = european ? euCountries[i % euCountries.length] : nonEuCountries[i % nonEuCountries.length];
             String address = (100 + i) + " " + (european ? "High Street" : "Market Street") + ", " + city + ", " + country;
-            customers.add(createCustomer(id, first + " " + last, address, employeeId));
+            TrustLevel trustLevel = switch (i % 3) {
+                case 0 -> TrustLevel.L1;
+                case 1 -> TrustLevel.L2;
+                default -> TrustLevel.L3;
+            };
+            String fullName = first + " " + last;
+            customers.add(createCustomer(id, fullName, address, employeeId, trustLevel, buildFakeCustomerEmail(fullName, id)));
         }
 
         return customerRepo.saveAll(customers);
@@ -264,13 +281,70 @@ public class DataInitializer {
         return employee;
     }
 
-    private Customer createCustomer(Long id, String name, String address, Long employeeId) {
+    private Customer createCustomer(Long id,
+                                    String name,
+                                    String address,
+                                    Long employeeId,
+                                    TrustLevel trustLevel,
+                                    String email) {
         Customer customer = new Customer();
         customer.setCustomerId(id);
         customer.setCustomerName(name);
         customer.setAddress(address);
         customer.setEmployeeId(employeeId);
+        customer.setTrustLevel(trustLevel);
+        customer.setEmail(email);
         return customer;
+    }
+
+    private void backfillCustomerTrustLevels(CustomerRepository customerRepo) {
+        List<Customer> customers = customerRepo.findAll();
+        List<Customer> updated = new ArrayList<>();
+        for (Customer customer : customers) {
+            if (customer.getTrustLevel() == null) {
+                customer.setTrustLevel(TrustLevel.L2);
+                updated.add(customer);
+            }
+        }
+        if (!updated.isEmpty()) {
+            customerRepo.saveAll(updated);
+        }
+    }
+
+    private void backfillCustomerEmails(CustomerRepository customerRepo) {
+        List<Customer> customers = customerRepo.findAll();
+        List<Customer> updated = new ArrayList<>();
+        for (Customer customer : customers) {
+            String currentEmail = customer.getEmail();
+            boolean emailMissing = currentEmail == null || currentEmail.trim().isEmpty();
+            boolean isNiall = customer.getCustomerName() != null && NIAL_DEEHAN_NAME.equalsIgnoreCase(customer.getCustomerName().trim());
+
+            if (isNiall && !NIAL_DEEHAN_EMAIL.equalsIgnoreCase(currentEmail)) {
+                customer.setEmail(NIAL_DEEHAN_EMAIL);
+                updated.add(customer);
+                continue;
+            }
+
+            if (emailMissing) {
+                customer.setEmail(buildFakeCustomerEmail(customer.getCustomerName(), customer.getCustomerId()));
+                updated.add(customer);
+            }
+        }
+
+        if (!updated.isEmpty()) {
+            customerRepo.saveAll(updated);
+        }
+    }
+
+    private String buildFakeCustomerEmail(String fullName, Long customerId) {
+        String safeName = fullName == null ? "customer" : fullName.toLowerCase()
+                .replaceAll("[^a-z0-9]+", ".")
+                .replaceAll("(^\\.+|\\.+$)", "");
+        if (safeName.isBlank()) {
+            safeName = "customer";
+        }
+        long safeId = customerId == null ? 0L : customerId;
+        return safeName + "." + safeId + "@example.test";
     }
 
     private ExternalCompany createCompany(Long id, String name, String address, String contactPerson, String phone) {

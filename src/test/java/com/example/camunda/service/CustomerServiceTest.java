@@ -2,6 +2,7 @@ package com.example.camunda.service;
 
 import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.EmployeeRepository;
 import com.example.camunda.exception.CustomerNotFoundException;
@@ -47,7 +48,10 @@ class CustomerServiceTest {
         testCustomer = new Customer();
         testCustomer.setCustomerId(1L);
         testCustomer.setCustomerName("Test Customer");
+        testCustomer.setAddress("1 Test Lane");
+        testCustomer.setEmail("test.customer@example.test");
         testCustomer.setEmployeeId(1L);
+        testCustomer.setTrustLevel(TrustLevel.L2);
         testCustomer.setCreatedAt(LocalDateTime.now());
         testCustomer.setUpdatedAt(LocalDateTime.now());
     }
@@ -125,6 +129,7 @@ class CustomerServiceTest {
     @Test
     void saveCustomer_WithValidCustomer_ShouldSaveAndReturn() {
         // Arrange
+        when(employeeRepository.existsById(1L)).thenReturn(true);
         when(customerRepository.save(testCustomer)).thenReturn(testCustomer);
 
         // Act

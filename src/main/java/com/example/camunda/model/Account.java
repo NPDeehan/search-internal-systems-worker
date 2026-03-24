@@ -20,7 +20,6 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 public class Account {
     @Id
-    @NotNull(message = "Account ID is required")
     @Positive(message = "Account ID must be positive")
     private Long accountId;
 

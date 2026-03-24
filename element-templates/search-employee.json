@@ -3,7 +3,7 @@
   "name": "Search Employee",
   "id": "com.example.camunda.search-employee",
   "description": "Service task to search for employees by name, department, or job title",
-  "version": 1,
+  "version": 4,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -37,7 +37,37 @@
       }
     },
     {
-      "id": "employeeName",
+      "id": "searchMode",
+      "label": "Search Mode",
+      "description": "Choose which primary criteria to use.",
+      "type": "Dropdown",
+      "value": "FLEXIBLE",
+      "choices": [
+        {
+          "name": "Name",
+          "value": "NAME"
+        },
+        {
+          "name": "Department",
+          "value": "DEPARTMENT"
+        },
+        {
+          "name": "Job Title",
+          "value": "JOB_TITLE"
+        },
+        {
+          "name": "Flexible (Combined)",
+          "value": "FLEXIBLE"
+        }
+      ],
+      "group": "input",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "searchMode"
+      }
+    },
+    {
+      "id": "employeeNameOnly",
       "label": "Employee Name",
       "description": "The name of the employee to search for. Can be partial name for fuzzy matching. Can be a static value or FEEL expression (e.g., =employeeName, =request.name)",
       "type": "Text",
@@ -48,11 +78,36 @@
         "name": "employeeName"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "NAME",
+        "type": "simple"
       }
     },
     {
-      "id": "department",
+      "id": "employeeNameFlexible",
+      "label": "Employee Name",
+      "description": "Optional name filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "employeeName"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "departmentOnly",
       "label": "Department",
       "description": "Filter employees by department. Can be a static value or FEEL expression (e.g., =department, =\"Sales\")",
       "type": "Text",
@@ -63,13 +118,58 @@
         "name": "department"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "DEPARTMENT",
+        "type": "simple"
       }
     },
     {
-      "id": "jobTitle",
-      "label": "Job Title",
-      "description": "Filter employees by job title (partial match supported). Can be a static value or FEEL expression (e.g., =jobTitle, =\"Manager\")",
+      "id": "departmentFlexible",
+      "label": "Department",
+      "description": "Optional department filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "department"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "jobTitleOnly",
+      "label": "Job Role",
+      "description": "Filter employees by role keyword (matches job title and related department text). Can be a static value or FEEL expression (e.g., =jobTitle, =\"Sales\")",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "jobTitle"
+      },
+      "constraints": {
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "JOB_TITLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "jobTitleFlexible",
+      "label": "Job Role",
+      "description": "Optional role keyword filter in flexible mode (matches job title and related department text).",
       "type": "Text",
       "group": "input",
       "feel": "optional",
@@ -79,54 +179,69 @@
       },
       "constraints": {
         "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
       }
     },
     {
-      "id": "exactMatch",
+      "id": "exactMatchName",
       "label": "Exact Name Match",
-      "description": "When true, requires exact name match. When false or not set, allows partial name matching. Only applies to employee name field.",
-      "type": "Dropdown",
-      "choices": [
-        {
-          "name": "False (Allow partial matching)",
-          "value": "false"
-        },
-        {
-          "name": "True (Exact match only)",
-          "value": "true"
-        }
-      ],
+      "description": "When true, requires exact name match. Use true or false, or FEEL runtime mapping (for example: =exactMatchVar).",
+      "type": "Text",
       "group": "input",
+      "feel": "optional",
       "binding": {
         "type": "zeebe:input",
         "name": "exactMatch"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "NAME",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "exactMatchFlexible",
+      "label": "Exact Name Match",
+      "description": "Optional in flexible mode. Use true or false, or FEEL runtime mapping (for example: =exactMatchVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "exactMatch"
+      },
+      "constraints": {
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
       }
     },
     {
       "id": "fuzzyMatching",
       "label": "Fuzzy Matching",
-      "description": "When true, enables fuzzy/similarity matching for employee searches using advanced algorithms. Searches by name, department, and job title with partial matching. When false or not set, uses exact matching only.",
-      "type": "Dropdown",
-      "choices": [
-        {
-          "name": "False (Exact matching)",
-          "value": "false"
-        },
-        {
-          "name": "True (Fuzzy matching)",
-          "value": "true"
-        }
-      ],
+      "description": "Enable fuzzy/similarity matching. Use true or false, or FEEL runtime mapping (for example: =fuzzyMatchingVar).",
+      "type": "Text",
       "group": "input",
+      "feel": "optional",
       "binding": {
         "type": "zeebe:input",
         "name": "fuzzyMatching"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
       }
     },
     {

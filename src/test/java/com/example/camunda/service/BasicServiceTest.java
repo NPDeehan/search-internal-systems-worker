@@ -1,6 +1,7 @@
 package com.example.camunda.service;
 
 import com.example.camunda.model.Customer;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.repository.CustomerRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +46,10 @@ class BasicServiceTest {
         Customer customer = new Customer();
         customer.setCustomerId(100L);
         customer.setCustomerName("Test Customer");
+        customer.setAddress("100 Test Street");
+        customer.setEmail("test.customer@example.test");
         customer.setEmployeeId(1L);
+        customer.setTrustLevel(TrustLevel.L1);
         customer.setCreatedAt(LocalDateTime.now());
         customer.setUpdatedAt(LocalDateTime.now());
 
@@ -57,5 +61,6 @@ class BasicServiceTest {
         Optional<Customer> found = customerService.findCustomer(100L, null);
         assertThat(found).isPresent();
         assertThat(found.get().getCustomerName()).isEqualTo("Test Customer");
+        assertThat(found.get().getTrustLevel()).isEqualTo(TrustLevel.L1);
     }
 }

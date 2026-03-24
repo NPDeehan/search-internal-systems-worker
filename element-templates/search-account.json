@@ -3,7 +3,7 @@
   "name": "Search Account",
   "id": "com.example.camunda.search-account",
   "description": "Service task to search for accounts by accountId and/or customerId and return account details with customer roles",
-  "version": 2,
+  "version": 3,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -37,7 +37,41 @@
       }
     },
     {
-      "id": "accountId",
+      "id": "searchMode",
+      "label": "Search Mode",
+      "description": "Choose which primary account lookup key to use.",
+      "type": "Dropdown",
+      "value": "FLEXIBLE",
+      "choices": [
+        {
+          "name": "Account ID",
+          "value": "ACCOUNT_ID"
+        },
+        {
+          "name": "Legacy Account ID Alias",
+          "value": "LEGACY_ALIAS"
+        },
+        {
+          "name": "Account Number",
+          "value": "ACCOUNT_NUMBER"
+        },
+        {
+          "name": "Customer ID",
+          "value": "CUSTOMER_ID"
+        },
+        {
+          "name": "Flexible (Combined)",
+          "value": "FLEXIBLE"
+        }
+      ],
+      "group": "input",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "searchMode"
+      }
+    },
+    {
+      "id": "accountIdOnly",
       "label": "Account ID",
       "description": "Primary account identifier to look up. Can be static or FEEL (e.g., =accountId, =order.accountId). Do NOT put customer ID here.",
       "type": "Text",
@@ -48,11 +82,36 @@
         "name": "accountId"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "ACCOUNT_ID",
+        "type": "simple"
       }
     },
     {
-      "id": "customerAccountId",
+      "id": "accountIdFlexible",
+      "label": "Account ID",
+      "description": "Optional account ID filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "accountId"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "customerAccountIdOnly",
       "label": "Legacy Account ID Alias",
       "description": "Backward compatibility only. This maps to account lookup exactly like Account ID. Prefer using Account ID above.",
       "type": "Text",
@@ -63,11 +122,36 @@
         "name": "customerAccountId"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "LEGACY_ALIAS",
+        "type": "simple"
       }
     },
     {
-      "id": "accountNumber",
+      "id": "customerAccountIdFlexible",
+      "label": "Legacy Account ID Alias",
+      "description": "Optional legacy alias in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "customerAccountId"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "accountNumberOnly",
       "label": "Account Number",
       "description": "Exact or partial account number (e.g., SA-1001-NDL or 1001). Used for account lookup.",
       "type": "Text",
@@ -78,11 +162,36 @@
         "name": "accountNumber"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "ACCOUNT_NUMBER",
+        "type": "simple"
       }
     },
     {
-      "id": "customerId",
+      "id": "accountNumberFlexible",
+      "label": "Account Number",
+      "description": "Optional account number filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "accountNumber"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "customerIdOnly",
       "label": "Customer ID",
       "description": "Customer identifier used to filter account relationships/roles. Do NOT put account ID here. Can be static or FEEL (e.g., =customerId, =payload.customerId).",
       "type": "Text",
@@ -93,7 +202,32 @@
         "name": "customerId"
       },
       "constraints": {
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "CUSTOMER_ID",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "customerIdFlexible",
+      "label": "Customer ID",
+      "description": "Optional customer filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "customerId"
+      },
+      "constraints": {
         "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
       }
     },
     {

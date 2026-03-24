@@ -33,7 +33,7 @@ Camunda 8 Connectors are pre-built integrations that allow you to connect your B
 
 ## 🔍 Implemented Connectors
 
-This project implements four custom job workers with fuzzy matching capabilities:
+This project implements nine custom job workers with fuzzy matching and CRUD capabilities:
 
 ### 1. **Match Customer with DRI** (`match-customer-with-dri`)
 - **Purpose**: Match customers with their designated relationship individuals (DRIs)
@@ -59,6 +59,36 @@ This project implements four custom job workers with fuzzy matching capabilities
 - **Features**: Multi-result search, role mapping (OWNER/ADMIN/NAMED), fallback handling when `customerId` is interpreted as account id for compatibility
 - **Returns**: Account details (type, balance, currency, status, dates) plus linked customer roles
 
+### 5. **Manage Customer Record** (`manage-customer-record`)
+- **Purpose**: Create, update, or delete customer records
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`
+- **Features**: Customer ID auto-generation on CREATE (when omitted), trust level support (`L1`, `L2`, `L3`), and employee relationship validation
+- **Returns**: Operation status + consolidated `customerCrudResult`
+
+### 6. **Manage Employee Record** (`manage-employee-record`)
+- **Purpose**: Create, update, or delete employee records
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`
+- **Features**: Employee ID auto-generation on CREATE (when omitted), partial updates, and consistent operation result payloads
+- **Returns**: Operation status + consolidated `employeeCrudResult`
+
+### 7. **Manage Company Record** (`manage-company-record`)
+- **Purpose**: Create, update, or delete external company records
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`
+- **Features**: Company ID auto-generation on CREATE (when omitted), partial updates, and not-found signaling for update/delete
+- **Returns**: Operation status + consolidated `companyCrudResult`
+
+### 8. **Manage Account Record** (`manage-account-record`)
+- **Purpose**: Create, update, or delete account records
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`
+- **Features**: Account ID auto-generation on CREATE (when omitted), account type support (`SAVINGS`, `CORPORATE`, `PERSONAL`), and date/balance field handling
+- **Returns**: Operation status + consolidated `accountCrudResult`
+
+### 9. **Manage Customer Account Link** (`manage-customer-account-link`)
+- **Purpose**: Connect customers to accounts, update existing customer roles on an account, or remove a link
+- **Operation**: `UPSERT_ROLE`, `REMOVE_LINK`
+- **Features**: Upsert semantics for relationship roles (`OWNER`, `ADMIN`, `NAMED`)
+- **Returns**: Operation status + consolidated `customerAccountLinkResult`
+
 ### 🧾 **Worker Reference (at a glance)**
 
 | Job Type | Worker Class | Primary Output Variable | Status Field |
@@ -67,6 +97,11 @@ This project implements four custom job workers with fuzzy matching capabilities
 | `search-employee` | `EmployeeSearchWorker` | `employeeSearchResult` | `searchStatus` |
 | `query-for-company` | `QueryForCompanyWorker` | `companySearchResult` | `status` inside `companySearchResult` |
 | `search-account` | `AccountSearchWorker` | `accountSearchResult` | `searchStatus` |
+| `manage-customer-record` | `CustomerCrudWorker` | `customerCrudResult` | `operationStatus` |
+| `manage-employee-record` | `EmployeeCrudWorker` | `employeeCrudResult` | `operationStatus` |
+| `manage-company-record` | `CompanyCrudWorker` | `companyCrudResult` | `operationStatus` |
+| `manage-account-record` | `AccountCrudWorker` | `accountCrudResult` | `operationStatus` |
+| `manage-customer-account-link` | `CustomerAccountLinkWorker` | `customerAccountLinkResult` | `operationStatus` |
 
 ### 🧠 **Fuzzy Matching Features**
 All connectors support advanced fuzzy matching using:
@@ -78,7 +113,7 @@ All connectors support advanced fuzzy matching using:
 ## 📋 Prerequisites
 
 ### System Requirements
-- **Java 17** or higher
+- **Java 21** or higher
 - **Maven 3.6** or higher
 - **Camunda 8 SaaS Account** (free tier available)
 
@@ -180,19 +215,45 @@ The application will start on `http://localhost:8081`
 
 ### Data Management
 - **Persistent H2 Database**: Data survives application restarts
-- **Deterministic Data Seeding**: Seeds mock data when DB is empty; optional full reset at startup via `app.seed.reset-on-startup=true`
-- **Employees**: 105 records
-- **Customers**: 107 records
-- **Companies**: 104 records
-- **Accounts**: 110 records + customer-account relationship links
+- **Deterministic Data Seeding**:
+   - `DataSeedingService` ensures baseline employees/customers/companies
+   - `DataInitializer` backfills customer trust/email and seeds accounts + links whenever missing
+   - Optional full reset at startup via `app.seed.reset-on-startup=true`
+- **Typical seeded volume**:
+   - Employees: 50+
+   - Customers: 100+
+   - Companies: 100+
+   - Accounts: 110 with customer-account relationship links
 
 ### REST API Endpoints
 - `GET /api/customers` - List all customers
+- `GET /api/customers/{id}` - Get customer by ID
+- `POST /api/customers` - Create customer
+- `PUT /api/customers/{id}` - Update customer
+- `DELETE /api/customers/{id}` - Delete customer
 - `GET /api/employees` - List all employees  
+- `GET /api/employees/{id}` - Get employee by ID
+- `POST /api/employees` - Create employee
+- `PUT /api/employees/{id}` - Update employee
+- `DELETE /api/employees/{id}` - Delete employee
 - `GET /api/companies` - List all companies
+- `GET /api/companies/{id}` - Get company by ID
+- `POST /api/companies` - Create company
+- `PUT /api/companies/{id}` - Update company
+- `DELETE /api/companies/{id}` - Delete company
 - `GET /api/accounts` - List all accounts
+- `GET /api/accounts/{id}` - Get account by ID
+- `POST /api/accounts` - Create account
+- `PUT /api/accounts/{id}` - Update account
+- `DELETE /api/accounts/{id}` - Delete account
 - `GET /api/customer-accounts` - List customer-account links
+- `POST /api/customer-accounts` - Create link or upsert role (`accountId`, `customerId`, `role`)
+- `PUT /api/customer-accounts` - Update link role (also supports upsert) (`accountId`, `customerId`, `role`)
+- `DELETE /api/customer-accounts/{accountId}/{customerId}` - Remove customer-account link
+- `GET /api/connection-status` - Camunda connectivity status
 - `GET /api/worker-status` - Check job worker status
+- `GET /api/job-history` - Recent job execution history
+- `GET /api/job-metrics` - Aggregated job metrics
 - `GET /actuator/health` - Application health check
 
 ## ▶️ Runbook (exactly how to run)
@@ -218,15 +279,25 @@ mvn spring-boot:run
 
 ## 🛠️ Maintenance guide
 
+For repeatable field additions on existing entities, use:
+- `docs/add-entity-variable-playbook.md`
+
 ### Day-to-day
 - Keep `application-secrets.properties` local only (never commit)
 - Review worker health using `GET /api/worker-status`
 - Review job execution history in dashboard/API
 
 ### Data lifecycle
-- The app seeds deterministic mock data only when the database is empty
+- The app always ensures customer trust/email fields are backfilled
+- The app seeds accounts and customer-account links whenever those tables are empty
+- Other seed datasets are created when below baseline thresholds
 - To force a full reset/re-seed on startup, set `app.seed.reset-on-startup=true`
 - If you need a clean local DB, run the VS Code task `Reset H2 DB files` or delete `data/camunda-worker-db.*`
+- In PowerShell, manual reset is:
+
+```powershell
+Remove-Item -Force -ErrorAction SilentlyContinue "data/camunda-worker-db.mv.db", "data/camunda-worker-db.trace.db"
+```
 
 ### Safe public repo practice
 - Rotate Camunda credentials if they were ever committed
@@ -291,6 +362,11 @@ For every new worker, update **all** of the following areas:
   - "Search Employee"
   - "Query for Company"
    - "Search Account"
+   - "Manage Customer Record"
+   - "Manage Employee Record"
+   - "Manage Company Record"
+   - "Manage Account Record"
+   - "Manage Customer Account Link"
 - Fill in search parameters using static values or FEEL expressions
 
 ### 3. Configure Output Variables
@@ -299,6 +375,11 @@ Each connector now uses a single consolidated output variable:
 - **Customer Match**: `matchingResult`
 - **Company Query**: `companySearchResult`
 - **Account Search**: `accountSearchResult`
+- **Customer CRUD**: `customerCrudResult`
+- **Employee CRUD**: `employeeCrudResult`
+- **Company CRUD**: `companyCrudResult`
+- **Account CRUD**: `accountCrudResult`
+- **Customer-Account Link CRUD**: `customerAccountLinkResult`
 
 ### 4. Deploy and Execute
 - Deploy your process to Camunda 8
@@ -335,6 +416,12 @@ allowMultiple: =count(customerIds) > 1
 2. Verify job types match BPMN service task configurations
 3. Ensure element templates are properly imported
 4. Check database connectivity and data seeding
+
+### Local H2 Startup Issues
+If startup fails with H2 schema/connection errors (for example after entity changes):
+1. Stop all running app instances
+2. Delete local H2 files (`data/camunda-worker-db.*`)
+3. Start the app again so schema + seeders recreate cleanly
 
 ### Performance Tips
 1. Use exact matching when possible (faster than fuzzy)

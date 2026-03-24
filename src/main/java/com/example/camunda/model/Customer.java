@@ -3,8 +3,9 @@ package com.example.camunda.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -18,7 +19,6 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 public class Customer {
     @Id
-    @NotNull(message = "Customer ID is required")
     @Positive(message = "Customer ID must be positive")
     private Long customerId;
     
@@ -29,11 +29,21 @@ public class Customer {
     @Column(nullable = false)
     @NotBlank(message = "Customer address is required")
     private String address;
+
+    @Column(unique = true)
+    @NotBlank(message = "Customer email is required")
+    @Email(message = "Customer email must be a valid email address")
+    private String email;
     
     @Column(nullable = false)
     @NotNull(message = "Employee ID is required")
     @Positive(message = "Employee ID must be positive")
     private Long employeeId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 2)
+    @NotNull(message = "Trust level is required")
+    private TrustLevel trustLevel;
     
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -77,12 +87,28 @@ public class Customer {
         this.address = address;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public Long getEmployeeId() {
         return employeeId;
     }
 
     public void setEmployeeId(Long employeeId) {
         this.employeeId = employeeId;
+    }
+
+    public TrustLevel getTrustLevel() {
+        return trustLevel;
+    }
+
+    public void setTrustLevel(TrustLevel trustLevel) {
+        this.trustLevel = trustLevel;
     }
 
     public LocalDateTime getCreatedAt() {

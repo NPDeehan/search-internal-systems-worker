@@ -3,7 +3,7 @@
   "name": "Query for Company",
   "id": "com.example.camunda.query-for-company",
   "description": "Service task to search for companies using multiple criteria: name, industry, city, and revenue. At least one search parameter must be provided.",
-  "version": 1,
+  "version": 3,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -37,7 +37,41 @@
       }
     },
     {
-      "id": "companyName",
+      "id": "searchMode",
+      "label": "Search Mode",
+      "description": "Choose which primary criteria to use.",
+      "type": "Dropdown",
+      "value": "FLEXIBLE",
+      "choices": [
+        {
+          "name": "Company Name",
+          "value": "COMPANY_NAME"
+        },
+        {
+          "name": "Industry",
+          "value": "INDUSTRY"
+        },
+        {
+          "name": "City",
+          "value": "CITY"
+        },
+        {
+          "name": "Revenue",
+          "value": "REVENUE"
+        },
+        {
+          "name": "Flexible (Combined)",
+          "value": "FLEXIBLE"
+        }
+      ],
+      "group": "input",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "searchMode"
+      }
+    },
+    {
+      "id": "companyNameOnly",
       "label": "Company Name",
       "description": "The name of the company to search for. Can be a static value or FEEL expression (e.g., =companyName, =company.name)",
       "type": "Text",
@@ -48,11 +82,36 @@
         "name": "companyName"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "COMPANY_NAME",
+        "type": "simple"
       }
     },
     {
-      "id": "industry",
+      "id": "companyNameFlexible",
+      "label": "Company Name",
+      "description": "Optional name filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "companyName"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "industryOnly",
       "label": "Industry",
       "description": "The industry sector to filter by. Can be a static value or FEEL expression (e.g., =industry, =\"Technology\")",
       "type": "Text",
@@ -63,11 +122,36 @@
         "name": "industry"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "INDUSTRY",
+        "type": "simple"
       }
     },
     {
-      "id": "city",
+      "id": "industryFlexible",
+      "label": "Industry",
+      "description": "Optional industry filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "industry"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "cityOnly",
       "label": "City",
       "description": "The city location to filter by. Can be a static value or FEEL expression (e.g., =city, =\"San Francisco\")",
       "type": "Text",
@@ -78,11 +162,36 @@
         "name": "city"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "CITY",
+        "type": "simple"
       }
     },
     {
-      "id": "revenue",
+      "id": "cityFlexible",
+      "label": "City",
+      "description": "Optional city filter in flexible mode.",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "city"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "revenueOnly",
       "label": "Revenue",
       "description": "The minimum revenue to filter by. Can be a static value or FEEL expression (e.g., =revenue, =1000000)",
       "type": "Text",
@@ -93,31 +202,95 @@
         "name": "revenue"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": true
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "REVENUE",
+        "type": "simple"
       }
     },
     {
-      "id": "fuzzyMatching",
-      "label": "Fuzzy Matching",
-      "description": "When true, enables fuzzy/similarity matching for company searches using advanced algorithms. Applies to company name and address fields with partial matching. When false or not set, uses exact matching only.",
-      "type": "Dropdown",
-      "choices": [
-        {
-          "name": "False (Exact matching)",
-          "value": "false"
-        },
-        {
-          "name": "True (Fuzzy matching)",
-          "value": "true"
-        }
-      ],
+      "id": "revenueFlexible",
+      "label": "Revenue",
+      "description": "Optional revenue filter in flexible mode.",
+      "type": "Text",
       "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "revenue"
+      },
+      "constraints": {
+        "notEmpty": false
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "fuzzyMatchingByName",
+      "label": "Fuzzy Matching",
+      "description": "Enable fuzzy matching. Use true or false, or FEEL runtime mapping (for example: =fuzzyMatchingVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
       "binding": {
         "type": "zeebe:input",
         "name": "fuzzyMatching"
       },
       "constraints": {
-        "notEmpty": false
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "COMPANY_NAME",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "fuzzyMatchingByCity",
+      "label": "Fuzzy Matching",
+      "description": "Enable fuzzy matching for city/address-oriented searches. Use true or false, or FEEL runtime mapping (for example: =fuzzyMatchingVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "fuzzyMatching"
+      },
+      "constraints": {
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "CITY",
+        "type": "simple"
+      }
+    },
+    {
+      "id": "fuzzyMatchingFlexible",
+      "label": "Fuzzy Matching",
+      "description": "Enable fuzzy matching in flexible mode. Use true or false, or FEEL runtime mapping (for example: =fuzzyMatchingVar).",
+      "type": "Text",
+      "group": "input",
+      "feel": "optional",
+      "binding": {
+        "type": "zeebe:input",
+        "name": "fuzzyMatching"
+      },
+      "constraints": {
+        "notEmpty": false,
+        "pattern": "^(true|false|=.+)$"
+      },
+      "condition": {
+        "property": "searchMode",
+        "equals": "FLEXIBLE",
+        "type": "simple"
       }
     },
     {
