@@ -26,7 +26,10 @@ public class JobHistory {
     private String status;
     
     @Column(columnDefinition = "TEXT")
-    private String variables;
+    private String inputVariables;
+
+    @Column(columnDefinition = "TEXT")
+    private String outputVariables;
     
     @Column(columnDefinition = "TEXT")
     private String errorMessage;
@@ -77,12 +80,20 @@ public class JobHistory {
         this.status = status;
     }
 
-    public String getVariables() {
-        return variables;
+    public String getInputVariables() {
+        return inputVariables;
     }
 
-    public void setVariables(String variables) {
-        this.variables = variables;
+    public void setInputVariables(String inputVariables) {
+        this.inputVariables = inputVariables;
+    }
+
+    public String getOutputVariables() {
+        return outputVariables;
+    }
+
+    public void setOutputVariables(String outputVariables) {
+        this.outputVariables = outputVariables;
     }
 
     public String getErrorMessage() {

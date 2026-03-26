@@ -21,6 +21,44 @@ public class DataSeedingService implements CommandLineRunner {
 
     private static final String NIAL_DEEHAN_NAME = "Niall Deehan";
     private static final String NIAL_DEEHAN_EMAIL = "niall.deehan@camunda.com";
+    private static final String[] GLOBAL_FIRST_NAMES = {
+            "Aisha", "Aarav", "Mei", "Sofia", "Luka", "Nia", "Thiago", "Yara", "Omar", "Hana",
+            "Kwame", "Elena", "Mateo", "Amira", "Jonas", "Anika", "Ravi", "Mina", "Noa", "Ibrahim"
+    };
+    private static final String[] GLOBAL_LAST_NAMES = {
+            "Okafor", "Singh", "Kim", "Silva", "Fernandez", "Nakamura", "Hassan", "Kowalski", "Mensah", "Dubois",
+            "Novak", "Garcia", "Patel", "Rahman", "Tanaka", "Santos", "Ali", "Ionescu", "Larsen", "Pereira"
+    };
+    private static final String[] GLOBAL_STREETS = {
+            "Harbour Road", "King Street", "Liberty Avenue", "Market Lane", "Canal Road",
+            "Station Road", "Olive Street", "Cedar Lane", "Sunrise Avenue", "Riverside Drive"
+    };
+    private static final CityCountry[] GLOBAL_LOCATIONS = {
+            new CityCountry("Dublin", "Ireland"),
+            new CityCountry("Lagos", "Nigeria"),
+            new CityCountry("Mumbai", "India"),
+            new CityCountry("Sao Paulo", "Brazil"),
+            new CityCountry("Tokyo", "Japan"),
+            new CityCountry("Seoul", "South Korea"),
+            new CityCountry("Mexico City", "Mexico"),
+            new CityCountry("Dubai", "UAE"),
+            new CityCountry("Nairobi", "Kenya"),
+            new CityCountry("Munich", "Germany"),
+            new CityCountry("Copenhagen", "Denmark"),
+            new CityCountry("Auckland", "New Zealand"),
+            new CityCountry("Istanbul", "Turkiye"),
+            new CityCountry("Cape Town", "South Africa"),
+            new CityCountry("Santiago", "Chile")
+    };
+    private static final String[] COMPANY_NAME_PREFIXES = {
+            "Aegis", "Atlas", "Nile", "Meridian", "Harbor", "Orchid", "Summit", "Aurora", "Pioneer", "Vertex"
+    };
+    private static final String[] COMPANY_NAME_MIDDLES = {
+            "Capital", "Trade", "Finance", "Advisory", "Markets", "Growth", "Wealth", "Bridge", "Holdings", "Ventures"
+    };
+    private static final String[] COMPANY_NAME_SUFFIXES = {
+            "Group", "Partners", "Solutions", "International", "Collective", "Network", "Services", "Associates"
+    };
 
     private static final Logger log = LoggerFactory.getLogger(DataSeedingService.class);
 
@@ -66,26 +104,6 @@ public class DataSeedingService implements CommandLineRunner {
     private void seedEmployees() {
         log.info("Seeding employees...");
         
-        String[] firstNames = {
-            "James", "Mary", "Robert", "Patricia", "John", "Jennifer", "Michael", "Linda",
-            "David", "Elizabeth", "William", "Barbara", "Richard", "Susan", "Joseph", "Jessica",
-            "Thomas", "Sarah", "Christopher", "Karen", "Charles", "Lisa", "Daniel", "Nancy",
-            "Matthew", "Betty", "Anthony", "Helen", "Mark", "Sandra", "Donald", "Donna",
-            "Steven", "Carol", "Paul", "Ruth", "Andrew", "Sharon", "Joshua", "Michelle",
-            "Kenneth", "Laura", "Kevin", "Sarah", "Brian", "Kimberly", "George", "Deborah",
-            "Timothy", "Dorothy", "Ronald", "Lisa", "Jason", "Nancy", "Edward", "Karen"
-        };
-        
-        String[] lastNames = {
-            "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
-            "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas",
-            "Taylor", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White",
-            "Harris", "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson", "Walker", "Young",
-            "Allen", "King", "Wright", "Scott", "Torres", "Nguyen", "Hill", "Flores",
-            "Green", "Adams", "Nelson", "Baker", "Hall", "Rivera", "Campbell", "Mitchell",
-            "Carter", "Roberts", "Gomez", "Phillips", "Evans", "Turner", "Diaz", "Parker"
-        };
-        
         String[] departments = {
             "Engineering", "Sales", "Marketing", "Human Resources", "Finance", "Operations",
             "Customer Service", "Product Management", "Quality Assurance", "IT Support",
@@ -103,7 +121,7 @@ public class DataSeedingService implements CommandLineRunner {
         for (long i = 1; i <= 50; i++) {
             Employee employee = new Employee();
             employee.setEmployeeId(i);
-            employee.setFullName(getRandomElement(firstNames) + " " + getRandomElement(lastNames));
+            employee.setFullName(getRandomElement(GLOBAL_FIRST_NAMES) + " " + getRandomElement(GLOBAL_LAST_NAMES));
             employee.setJobTitle(getRandomElement(jobTitles));
             employee.setDepartment(getRandomElement(departments));
             employee.setPhoneNumber(generatePhoneNumber());
@@ -133,40 +151,12 @@ public class DataSeedingService implements CommandLineRunner {
         customerRepository.save(johnathanDoe);
         log.info("Seeded special customer: Johnathan Doe (ID: 1)");
         
-        String[] customerFirstNames = {
-            "Alice", "Bob", "Charlie", "Diana", "Edward", "Fiona", "George", "Hannah",
-            "Ian", "Julia", "Kevin", "Laura", "Mike", "Nina", "Oscar", "Paula",
-            "Quincy", "Rachel", "Steve", "Tina", "Ulrich", "Vera", "Walter", "Xara",
-            "Yolanda", "Zachary", "Amanda", "Benjamin", "Catherine", "Douglas", "Emily", "Frank",
-            "Grace", "Henry", "Irene", "Jack", "Katherine", "Leonard", "Margaret", "Nathan",
-            "Olivia", "Peter", "Quinn", "Rebecca", "Samuel", "Teresa", "Ursula", "Victor",
-            "Wendy", "Xavier", "Yvonne", "Zoe", "Aaron", "Brenda", "Carlos", "Debbie",
-            "Eric", "Felicia", "Gerald", "Holly", "Isaac", "Janet", "Keith", "Louise",
-            "Martin", "Nicole", "Owen", "Pamela", "Roger", "Stephanie", "Tony", "Valerie",
-            "Wayne", "Ximena", "Yale", "Zara", "Albert", "Beatrice", "Colin", "Denise",
-            "Edgar", "Florence", "Gary", "Helen", "Ivan", "Joyce", "Karl", "Linda",
-            "Mason", "Norma", "Otto", "Priscilla", "Quentin", "Rosa", "Simon", "Theresa",
-            "Ulysses", "Victoria", "Warren", "Xenia", "York", "Zelda"
-        };
-        
-        String[] customerLastNames = {
-            "Cooper", "Reed", "Bailey", "Bell", "Murphy", "Rivera", "Cook", "Rogers", "Morgan", "Peterson",
-            "Collins", "Edwards", "Stewart", "Flores", "Morris", "Nguyen", "Parker", "Gonzalez", "Alexander", "Ramos",
-            "Wallace", "Griffin", "West", "Cole", "Hayes", "Chavez", "Gibson", "Bryant", "Ellis", "Stevens",
-            "Murray", "Ford", "Marshall", "Owens", "McDonald", "Harrison", "Ruiz", "Kennedy", "Wells", "Alvarez",
-            "Woods", "Mendez", "Castillo", "Olson", "Webb", "Washington", "Tucker", "Freeman", "Burns", "Henry",
-            "Vasquez", "Snyder", "Simpson", "Crawford", "Jimenez", "Porter", "Mason", "Shaw", "Gordon", "Wagner",
-            "Hunter", "Romero", "Hicks", "Dixon", "Hunt", "Palmer", "Robertson", "Black", "Holmes", "Stone",
-            "Meyer", "Boyd", "Mills", "Warren", "Fox", "Rose", "Rice", "Morales", "Schmidt", "Patel",
-            "Ferguson", "Nichols", "Herrera", "Medina", "Ryan", "Fernandez", "Weaver", "Daniels", "Stephens", "Gardner",
-            "Payne", "Kelley", "Dunn", "Pierce", "Arnold", "Tran", "Spencer", "Peters", "Hawkins", "Grant"
-        };
-
         for (long i = 2; i <= 100; i++) {
             Customer customer = new Customer();
             customer.setCustomerId(i);
-            customer.setCustomerName(getRandomElement(customerFirstNames) + " " + getRandomElement(customerLastNames));
-            customer.setAddress((100 + i) + " Main Street, Dublin, Ireland");
+            customer.setCustomerName(getRandomElement(GLOBAL_FIRST_NAMES) + " " + getRandomElement(GLOBAL_LAST_NAMES));
+            CityCountry location = getRandomElement(GLOBAL_LOCATIONS);
+            customer.setAddress(buildDiverseAddress((int) (100 + i), (int) i, location));
             // Randomly assign to an employee
             customer.setEmployeeId(getRandomElement(employeeIds));
             customer.setTrustLevel(getRandomTrustLevel());
@@ -256,60 +246,20 @@ public class DataSeedingService implements CommandLineRunner {
 
     private void seedExternalCompanies() {
         log.info("Seeding external companies...");
-        
-        String[] companyNames = {
-            "TechCorp Solutions", "Global Dynamics Inc", "Innovation Labs LLC", "Digital Frontiers Corp",
-            "NextGen Technologies", "Alpha Systems", "Beta Innovations", "Gamma Solutions",
-            "Delta Enterprises", "Epsilon Corp", "Zeta Technologies", "Eta Innovations",
-            "Theta Systems", "Iota Solutions", "Kappa Enterprises", "Lambda Corp",
-            "Mu Technologies", "Nu Innovations", "Xi Systems", "Omicron Solutions",
-            "Pi Enterprises", "Rho Corp", "Sigma Technologies", "Tau Innovations",
-            "Upsilon Systems", "Phi Solutions", "Chi Enterprises", "Psi Corp",
-            "Omega Technologies", "Acme Industries", "Zenith Corp", "Pinnacle Solutions",
-            "Summit Technologies", "Apex Innovations", "Vertex Systems", "Prime Solutions",
-            "Elite Enterprises", "Superior Corp", "Premium Technologies", "Excellence Inc",
-            "Quantum Dynamics", "Fusion Technologies", "Synergy Solutions", "Catalyst Corp",
-            "Momentum Inc", "Velocity Systems", "Accelerate Solutions", "Breakthrough Technologies",
-            "Pioneer Corp", "Frontier Solutions", "Horizon Technologies", "Vista Innovations",
-            "Spectrum Systems", "Prism Solutions", "Crystal Technologies", "Diamond Corp",
-            "Platinum Inc", "Gold Standard Solutions", "Silver Technologies", "Bronze Systems",
-            "Iron Corp", "Steel Solutions", "Titanium Technologies", "Carbon Innovations",
-            "Silicon Systems", "Digital Solutions", "Cyber Technologies", "Data Corp",
-            "Cloud Innovations", "Web Systems", "Mobile Solutions", "Software Technologies",
-            "Hardware Corp", "Network Solutions", "Security Technologies", "Analytics Inc",
-            "Intelligence Systems", "Smart Solutions", "Connected Technologies", "IoT Corp",
-            "AI Innovations", "Machine Learning Systems", "Robotics Solutions", "Automation Technologies",
-            "Blockchain Corp", "Crypto Solutions", "FinTech Technologies", "EdTech Innovations",
-            "HealthTech Systems", "BioTech Solutions", "GreenTech Technologies", "CleanTech Corp",
-            "RenewTech Inc", "EcoTech Solutions", "SustainTech Technologies", "FutureTech Innovations",
-            "ModernTech Systems", "AdvancedTech Solutions", "CuttingEdge Technologies", "StateOfArt Corp",
-            "Revolutionary Inc", "Disruptive Solutions", "Transformative Technologies", "Paradigm Innovations"
-        };
-        
-        String[] cities = {
-            "New York", "Los Angeles", "Chicago", "Houston", "Phoenix", "Philadelphia",
-            "San Antonio", "San Diego", "Dallas", "San Jose", "Austin", "Jacksonville",
-            "Fort Worth", "Columbus", "Charlotte", "San Francisco", "Indianapolis", "Seattle",
-            "Denver", "Washington", "Boston", "Nashville", "Baltimore", "Oklahoma City",
-            "Louisville", "Portland", "Las Vegas", "Milwaukee", "Albuquerque", "Tucson",
-            "Fresno", "Sacramento", "Mesa", "Kansas City", "Atlanta", "Omaha",
-            "Colorado Springs", "Raleigh", "Virginia Beach", "Miami", "Tampa", "Minneapolis",
-            "Tulsa", "Arlington", "New Orleans", "Wichita", "Cleveland", "Bakersfield"
-        };
-        
-
 
         for (long i = 1; i <= 100; i++) {
             ExternalCompany company = new ExternalCompany();
             company.setCompanyId(i);
-            company.setCompanyName(getRandomElement(companyNames) + (i > 96 ? " " + i : ""));
-            
-            String city = getRandomElement(cities);
-            String state = getStateForCity(city);
-            company.setAddress(random.nextInt(9999) + 1 + " " + getRandomStreetName() + ", " + city + ", " + state + " " + (10000 + random.nextInt(90000)));
+            String name = getRandomElement(COMPANY_NAME_PREFIXES) + " "
+                    + getRandomElement(COMPANY_NAME_MIDDLES) + " "
+                    + getRandomElement(COMPANY_NAME_SUFFIXES);
+            company.setCompanyName(name + (i > 96 ? " " + i : ""));
+
+            CityCountry location = getRandomElement(GLOBAL_LOCATIONS);
+            company.setAddress(buildDiverseAddress(random.nextInt(9999) + 1, (int) i * 3, location));
             
             company.setContactPerson(generateContactPerson());
-            company.setPhoneNumber(generatePhoneNumber());
+            company.setPhoneNumber(generatePhoneNumber(location.country()));
             
             externalCompanyRepository.save(company);
         }
@@ -318,6 +268,10 @@ public class DataSeedingService implements CommandLineRunner {
     }
 
     private String getRandomElement(String[] array) {
+        return array[random.nextInt(array.length)];
+    }
+
+    private <T> T getRandomElement(T[] array) {
         return array[random.nextInt(array.length)];
     }
     
@@ -345,111 +299,58 @@ public class DataSeedingService implements CommandLineRunner {
     }
 
     private String generatePhoneNumber() {
-        return "+1-%03d-%03d-%04d".formatted(
+        String[] dialCodes = {"353", "234", "91", "55", "81", "82", "52", "971", "254", "49", "45", "64", "90", "27", "56"};
+        String dialCode = getRandomElement(dialCodes);
+        return "+%s-%03d-%03d-%04d".formatted(
+                dialCode,
                 200 + random.nextInt(800),
                 200 + random.nextInt(800),
                 1000 + random.nextInt(9000));
     }
 
-    private String generateContactPerson() {
-        String[] titles = {"Mr.", "Ms.", "Dr.", "Prof."};
-        String[] firstNames = {"John", "Jane", "Michael", "Sarah", "David", "Lisa", "Robert", "Jennifer"};
-        String[] lastNames = {"Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis"};
-        
-        return getRandomElement(titles) + " " + getRandomElement(firstNames) + " " + getRandomElement(lastNames);
-    }
-
-    private String getRandomStreetName() {
-        String[] streetNames = {
-            "Main St", "Oak Ave", "First St", "Second St", "Park Ave", "Elm St", "Washington St",
-            "Maple Ave", "Cedar St", "Pine St", "Lake St", "Hill St", "Church St", "High St",
-            "School St", "Center St", "Market St", "Water St", "Union St", "Broadway"
+    private String generatePhoneNumber(String country) {
+        String dialCode = switch (country) {
+            case "Ireland" -> "353";
+            case "Nigeria" -> "234";
+            case "India" -> "91";
+            case "Brazil" -> "55";
+            case "Japan" -> "81";
+            case "South Korea" -> "82";
+            case "Mexico" -> "52";
+            case "UAE" -> "971";
+            case "Kenya" -> "254";
+            case "Germany" -> "49";
+            case "Denmark" -> "45";
+            case "New Zealand" -> "64";
+            case "Turkiye" -> "90";
+            case "South Africa" -> "27";
+            case "Chile" -> "56";
+            default -> "44";
         };
-        return getRandomElement(streetNames);
+        return "+%s-%03d-%03d-%04d".formatted(
+            dialCode,
+                200 + random.nextInt(800),
+                200 + random.nextInt(800),
+            1000 + random.nextInt(9000));
     }
 
-    private String getStateForCity(String city) {
-        // Simplified state mapping for major cities
-        switch (city) {
-            case "New York":
-                return "NY";
-            case "Los Angeles":
-            case "San Diego":
-            case "San Jose":
-            case "San Francisco":
-            case "Fresno":
-            case "Sacramento":
-            case "Bakersfield":
-                return "CA";
-            case "Chicago":
-                return "IL";
-            case "Houston":
-            case "San Antonio":
-            case "Dallas":
-            case "Fort Worth":
-            case "Austin":
-            case "Arlington":
-                return "TX";
-            case "Phoenix":
-            case "Mesa":
-            case "Tucson":
-                return "AZ";
-            case "Philadelphia":
-                return "PA";
-            case "Jacksonville":
-            case "Miami":
-            case "Tampa":
-                return "FL";
-            case "Columbus":
-            case "Cleveland":
-                return "OH";
-            case "Charlotte":
-            case "Raleigh":
-                return "NC";
-            case "Indianapolis":
-                return "IN";
-            case "Seattle":
-                return "WA";
-            case "Denver":
-            case "Colorado Springs":
-                return "CO";
-            case "Washington":
-                return "DC";
-            case "Boston":
-                return "MA";
-            case "Nashville":
-                return "TN";
-            case "Baltimore":
-                return "MD";
-            case "Oklahoma City":
-            case "Tulsa":
-                return "OK";
-            case "Louisville":
-                return "KY";
-            case "Portland":
-                return "OR";
-            case "Las Vegas":
-                return "NV";
-            case "Milwaukee":
-                return "WI";
-            case "Albuquerque":
-                return "NM";
-            case "Kansas City":
-                return "MO";
-            case "Atlanta":
-                return "GA";
-            case "Omaha":
-                return "NE";
-            case "Virginia Beach":
-                return "VA";
-            case "Minneapolis":
-                return "MN";
-            case "New Orleans":
-                return "LA";
-            case "Wichita":
-                return "KS";
-            default:
-                return "CA";
-        }
+    private String generateContactPerson() {
+        String[] titles = {"Ms.", "Mr.", "Dr.", "Prof."};
+        
+        return getRandomElement(titles) + " " + getRandomElement(GLOBAL_FIRST_NAMES) + " " + getRandomElement(GLOBAL_LAST_NAMES);
+    }
+
+    private String buildDiverseAddress(int houseNumber, int index, CityCountry location) {
+        String street = GLOBAL_STREETS[index % GLOBAL_STREETS.length];
+        String postalChunk = String.format("%03d", (index * 17) % 1000);
+        return switch (index % 4) {
+            case 0 -> houseNumber + " " + street + ", " + location.city() + ", " + location.country();
+            case 1 -> houseNumber + " " + street + ", " + location.city() + " " + postalChunk + ", " + location.country();
+            case 2 -> "Unit " + ((index % 12) + 1) + ", " + houseNumber + " " + street + ", " + location.city() + ", " + location.country();
+            default -> houseNumber + " " + street + " District, " + location.city() + ", " + location.country();
+        };
+    }
+
+    private record CityCountry(String city, String country) {
     }
 }

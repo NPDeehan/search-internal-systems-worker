@@ -11,6 +11,8 @@ import com.example.camunda.worker.CompanyCrudWorker;
 import com.example.camunda.worker.CustomerCrudWorker;
 import com.example.camunda.worker.CustomerAccountLinkWorker;
 import com.example.camunda.worker.EmployeeCrudWorker;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -28,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ZeebeJobPollingService {
     
     private static final Logger log = LoggerFactory.getLogger(ZeebeJobPollingService.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
     
     private final ZeebeConnectionService zeebeConnectionService;
     private final MatchCustomerWithDriWorker matchWorker;
@@ -179,11 +182,12 @@ public class ZeebeJobPollingService {
     private void processJob(ActivatedJob job, String jobType, java.util.function.Function<ActivatedJob, Object> handler) {
         long startTime = System.currentTimeMillis();
         String jobKey = String.valueOf(job.getKey());
-        String variables = job.getVariables();
+        String inputVariables = job.getVariables();
 
         try {
             log.debug("Processing job {} of type {}", jobKey, jobType);
             Object result = handler.apply(job);
+            String outputVariables = toJson(result);
             
             zeebeConnectionService.getClient()
                     .newCompleteCommand(job.getKey())
@@ -192,7 +196,7 @@ public class ZeebeJobPollingService {
                     .join();
 
             long executionTime = System.currentTimeMillis() - startTime;
-            jobHistoryService.recordJobSuccess(jobType, jobKey, variables, executionTime);
+            jobHistoryService.recordJobSuccess(jobType, jobKey, inputVariables, outputVariables, executionTime);
             
             log.info("Completed job {} of type {} in {}ms", jobKey, jobType, executionTime);
 
@@ -206,9 +210,21 @@ public class ZeebeJobPollingService {
                     .send()
                     .join();
 
-            jobHistoryService.recordJobFailure(jobType, jobKey, variables, e.getMessage(), executionTime);
+            jobHistoryService.recordJobFailure(jobType, jobKey, inputVariables, e.getMessage(), executionTime);
             
             log.error("Failed job {} of type {} after {}ms: {}", jobKey, jobType, executionTime, e.getMessage());
+        }
+    }
+
+    private String toJson(Object payload) {
+        if (payload == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize job output payload for history: {}", e.getMessage());
+            return String.valueOf(payload);
         }
     }
 

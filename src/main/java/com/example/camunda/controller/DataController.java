@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
@@ -227,9 +228,10 @@ public class DataController {
     }
 
     @GetMapping("/job-history")
-    public List<JobHistoryDTO> getJobHistory() {
-        log.debug("Fetching enhanced job history");
-        List<JobHistory> jobHistories = jobHistoryService.getRecentJobHistory(100);
+    public List<JobHistoryDTO> getJobHistory(@RequestParam(defaultValue = "200") int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 1000));
+        log.debug("Fetching enhanced job history, limit={}", safeLimit);
+        List<JobHistory> jobHistories = jobHistoryService.getRecentJobHistory(safeLimit);
         return jobHistories.stream()
                 .map(JobHistoryDTO::fromJobHistory)
                 .collect(Collectors.toList());

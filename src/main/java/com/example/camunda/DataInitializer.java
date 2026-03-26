@@ -29,6 +29,51 @@ public class DataInitializer {
     private static final String NIAL_DEEHAN_NAME = "Niall Deehan";
     private static final String NIAL_DEEHAN_EMAIL = "niall.deehan@camunda.com";
 
+    private static final String[] GLOBAL_FIRST_NAMES = {
+            "Aisha", "Aarav", "Mei", "Sofia", "Luka", "Nia", "Thiago", "Yara", "Omar", "Hana",
+            "Kwame", "Elena", "Mateo", "Amira", "Jonas", "Anika", "Ravi", "Mina", "Noa", "Ibrahim"
+    };
+    private static final String[] GLOBAL_LAST_NAMES = {
+            "Okafor", "Singh", "Kim", "Silva", "Fernandez", "Nakamura", "Hassan", "Kowalski", "Mensah", "Dubois",
+            "Novak", "Garcia", "Patel", "Rahman", "Tanaka", "Santos", "Ali", "Ionescu", "Larsen", "Pereira"
+    };
+    private static final String[] GLOBAL_STREETS = {
+            "Harbour Road", "King Street", "Liberty Avenue", "Market Lane", "Canal Road",
+            "Station Road", "Olive Street", "Cedar Lane", "Sunrise Avenue", "Riverside Drive"
+    };
+    private static final CityCountry[] GLOBAL_LOCATIONS = {
+            new CityCountry("Dublin", "Ireland"),
+            new CityCountry("Lagos", "Nigeria"),
+            new CityCountry("Mumbai", "India"),
+            new CityCountry("Sao Paulo", "Brazil"),
+            new CityCountry("Tokyo", "Japan"),
+            new CityCountry("Seoul", "South Korea"),
+            new CityCountry("Mexico City", "Mexico"),
+            new CityCountry("Dubai", "UAE"),
+            new CityCountry("Nairobi", "Kenya"),
+            new CityCountry("Munich", "Germany"),
+            new CityCountry("Copenhagen", "Denmark"),
+            new CityCountry("Auckland", "New Zealand"),
+            new CityCountry("Istanbul", "Turkiye"),
+            new CityCountry("Cape Town", "South Africa"),
+            new CityCountry("Santiago", "Chile")
+    };
+    private static final String[] COMPANY_NAME_PREFIXES = {
+            "Aegis", "Atlas", "Nile", "Meridian", "Harbor", "Orchid", "Summit", "Aurora", "Pioneer", "Vertex"
+    };
+    private static final String[] COMPANY_NAME_MIDDLES = {
+            "Capital", "Trade", "Finance", "Advisory", "Markets", "Growth", "Wealth", "Bridge", "Holdings", "Ventures"
+    };
+    private static final String[] COMPANY_NAME_SUFFIXES = {
+            "Group", "Partners", "Solutions", "International", "Collective", "Network", "Services", "Associates"
+    };
+    private static final String[] CONTACT_FIRST_NAMES = {
+            "Amina", "Kenji", "Lucia", "Diego", "Noor", "Marek", "Priya", "Tunde", "Elif", "Sora"
+    };
+    private static final String[] CONTACT_LAST_NAMES = {
+            "Diallo", "Ito", "Costa", "Haddad", "Nowak", "Sharma", "Mensah", "Demir", "Park", "Silveira"
+    };
+
     @Bean
     CommandLineRunner initData(CustomerRepository customerRepo,
                                EmployeeRepository employeeRepo,
@@ -115,24 +160,13 @@ public class DataInitializer {
         customers.add(createCustomer(500L, "Liam O'Connor", "8 Via Roma, Milan, Italy", 5L, TrustLevel.L3, buildFakeCustomerEmail("Liam O'Connor", 500L)));
         customers.add(createCustomer(600L, "Ava Thompson", "56 Damrak, Amsterdam, Netherlands", 1L, TrustLevel.L1, buildFakeCustomerEmail("Ava Thompson", 600L)));
 
-        String[] euFirstNames = {"Anna", "Marco", "Isla", "Gregor", "Ines", "Pavel", "Maeve", "Jonas", "Clara", "Eoin"};
-        String[] euLastNames = {"Schmidt", "Costa", "Doyle", "Nowak", "Van Dijk", "Petrov", "Larsen", "Moreno", "Bianchi", "Ivanova"};
-        String[] nonEuFirstNames = {"Aiden", "Priya", "Yuki", "Daniel", "Leila", "Omar"};
-        String[] nonEuLastNames = {"Singh", "Kim", "Anderson", "Hassan", "Lopez", "Wong"};
-        String[] euCities = {"Dublin", "Paris", "Berlin", "Madrid", "Milan", "Warsaw", "Amsterdam", "Prague", "Lisbon", "Copenhagen"};
-        String[] euCountries = {"Ireland", "France", "Germany", "Spain", "Italy", "Poland", "Netherlands", "Czechia", "Portugal", "Denmark"};
-        String[] nonEuCities = {"New York", "Toronto", "Singapore", "Sydney", "Tokyo", "Dubai"};
-        String[] nonEuCountries = {"USA", "Canada", "Singapore", "Australia", "Japan", "UAE"};
-
         for (int i = 0; i < 100; i++) {
-            boolean european = i < 70;
-            String first = european ? euFirstNames[i % euFirstNames.length] : nonEuFirstNames[i % nonEuFirstNames.length];
-            String last = european ? euLastNames[(i * 5) % euLastNames.length] : nonEuLastNames[(i * 3) % nonEuLastNames.length];
+            String first = GLOBAL_FIRST_NAMES[i % GLOBAL_FIRST_NAMES.length];
+            String last = GLOBAL_LAST_NAMES[(i * 5) % GLOBAL_LAST_NAMES.length];
             long id = 2000L + i;
             long employeeId = employees.get(i % employees.size()).getEmployeeId();
-            String city = european ? euCities[i % euCities.length] : nonEuCities[i % nonEuCities.length];
-            String country = european ? euCountries[i % euCountries.length] : nonEuCountries[i % nonEuCountries.length];
-            String address = (100 + i) + " " + (european ? "High Street" : "Market Street") + ", " + city + ", " + country;
+            CityCountry location = GLOBAL_LOCATIONS[i % GLOBAL_LOCATIONS.length];
+            String address = buildDiverseAddress(100 + i, i, location);
             TrustLevel trustLevel = switch (i % 3) {
                 case 0 -> TrustLevel.L1;
                 case 1 -> TrustLevel.L2;
@@ -153,29 +187,17 @@ public class DataInitializer {
         companies.add(createCompany(2000L, "Initech", "42 Silicon Ave, Tech City", "John Roe", "555-333-4444"));
         companies.add(createCompany(3000L, "Umbrella Financial", "17 Queen Rd, Dublin", "Martha Lane", "555-222-8888"));
 
-        String[] euCities = {"Dublin", "Paris", "Berlin", "Madrid", "Milan", "Warsaw", "Amsterdam", "Prague", "Lisbon", "Copenhagen"};
-        String[] euCountries = {"Ireland", "France", "Germany", "Spain", "Italy", "Poland", "Netherlands", "Czechia", "Portugal", "Denmark"};
-        String[] nonEuCities = {"New York", "Toronto", "Singapore", "Sydney", "Tokyo"};
-        String[] nonEuCountries = {"USA", "Canada", "Singapore", "Australia", "Japan"};
-        String[] euNameLeads = {"Euro", "Nordic", "Alpine", "Atlantic", "Continental", "Union", "Prime", "Summit"};
-        String[] nonEuNameLeads = {"Global", "Pacific", "Meridian", "Vertex", "Harbor", "Pioneer", "Frontier", "Nexus"};
-        String[] nameMiddles = {"Capital", "Trade", "Finance", "Asset", "Wealth", "Growth", "Credit", "Market", "Advisory", "Bridge"};
-        String[] nameEnds = {"Holdings", "Group", "Partners", "Ventures", "Solutions", "Advisors", "Services", "International"};
-
         for (int i = 0; i < 100; i++) {
-            boolean european = i < 70;
-            String city = european ? euCities[i % euCities.length] : nonEuCities[i % nonEuCities.length];
-            String country = european ? euCountries[i % euCountries.length] : nonEuCountries[i % nonEuCountries.length];
+            CityCountry location = GLOBAL_LOCATIONS[(i * 2) % GLOBAL_LOCATIONS.length];
             long id = 4000L + i;
-            String lead = european
-                    ? euNameLeads[i % euNameLeads.length]
-                    : nonEuNameLeads[i % nonEuNameLeads.length];
-            String middle = nameMiddles[(i * 3) % nameMiddles.length];
-            String end = nameEnds[(i * 5) % nameEnds.length];
+            String lead = COMPANY_NAME_PREFIXES[i % COMPANY_NAME_PREFIXES.length];
+            String middle = COMPANY_NAME_MIDDLES[(i * 3) % COMPANY_NAME_MIDDLES.length];
+            String end = COMPANY_NAME_SUFFIXES[(i * 5) % COMPANY_NAME_SUFFIXES.length];
             String name = lead + " " + middle + " " + end;
-            String address = (10 + i) + " Market Street, " + city + ", " + country;
-            String contact = (european ? "Elena" : "Jordan") + " Contact " + (i + 1);
-            String phone = String.format("+%s-%03d-%04d", european ? "44" : "1", (i % 900) + 100, (i * 29 % 9000) + 1000);
+            String address = buildDiverseAddress(10 + i, i + 31, location);
+            String contact = CONTACT_FIRST_NAMES[i % CONTACT_FIRST_NAMES.length] + " "
+                + CONTACT_LAST_NAMES[(i * 7) % CONTACT_LAST_NAMES.length];
+            String phone = buildRegionalPhone(location.country(), i);
             companies.add(createCompany(id, name, address, contact, phone));
         }
 
@@ -345,6 +367,42 @@ public class DataInitializer {
         }
         long safeId = customerId == null ? 0L : customerId;
         return safeName + "." + safeId + "@example.test";
+    }
+
+    private String buildDiverseAddress(int houseNumber, int index, CityCountry location) {
+        String street = GLOBAL_STREETS[index % GLOBAL_STREETS.length];
+        String postalChunk = String.format("%03d", (index * 17) % 1000);
+        return switch (index % 4) {
+            case 0 -> houseNumber + " " + street + ", " + location.city() + ", " + location.country();
+            case 1 -> houseNumber + " " + street + ", " + location.city() + " " + postalChunk + ", " + location.country();
+            case 2 -> "Unit " + ((index % 12) + 1) + ", " + houseNumber + " " + street + ", " + location.city() + ", " + location.country();
+            default -> houseNumber + " " + street + " District, " + location.city() + ", " + location.country();
+        };
+    }
+
+    private String buildRegionalPhone(String country, int index) {
+        String dialCode = switch (country) {
+            case "Ireland" -> "353";
+            case "Nigeria" -> "234";
+            case "India" -> "91";
+            case "Brazil" -> "55";
+            case "Japan" -> "81";
+            case "South Korea" -> "82";
+            case "Mexico" -> "52";
+            case "UAE" -> "971";
+            case "Kenya" -> "254";
+            case "Germany" -> "49";
+            case "Denmark" -> "45";
+            case "New Zealand" -> "64";
+            case "Turkiye" -> "90";
+            case "South Africa" -> "27";
+            case "Chile" -> "56";
+            default -> "44";
+        };
+        return String.format("+%s-%03d-%04d", dialCode, (index % 900) + 100, (index * 29 % 9000) + 1000);
+    }
+
+    private record CityCountry(String city, String country) {
     }
 
     private ExternalCompany createCompany(Long id, String name, String address, String contactPerson, String phone) {

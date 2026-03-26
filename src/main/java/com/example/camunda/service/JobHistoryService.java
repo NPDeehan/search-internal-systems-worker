@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,19 +46,32 @@ public class JobHistoryService {
     }
 
     public Map<String, Long> getJobCountsByType() {
-        return jobHistoryRepository.countJobsByType();
+        Map<String, Long> counts = new LinkedHashMap<>();
+        for (Object[] row : jobHistoryRepository.countJobsByTypeRaw()) {
+            if (row == null || row.length < 2) {
+                continue;
+            }
+            String jobType = row[0] == null ? "UNKNOWN" : row[0].toString();
+            Long count = row[1] instanceof Number number ? number.longValue() : 0L;
+            counts.put(jobType, count);
+        }
+        return counts;
     }
 
     @Transactional
     public JobHistory recordJobExecution(String jobType, String jobKey, String status, 
-                                       String variables, String errorMessage, long executionTimeMs) {
+                                       String inputVariables,
+                                       String outputVariables,
+                                       String errorMessage,
+                                       long executionTimeMs) {
         log.debug("Recording job execution: type={}, key={}, status={}", jobType, jobKey, status);
         
         JobHistory jobHistory = new JobHistory();
         jobHistory.setJobType(jobType);
         jobHistory.setJobKey(jobKey);
         jobHistory.setStatus(status);
-        jobHistory.setVariables(variables);
+        jobHistory.setInputVariables(inputVariables);
+        jobHistory.setOutputVariables(outputVariables);
         jobHistory.setErrorMessage(errorMessage);
         jobHistory.setExecutionTime(LocalDateTime.now());
         jobHistory.setExecutionTimeMs(executionTimeMs);
@@ -66,12 +80,20 @@ public class JobHistoryService {
     }
 
     @Transactional
-    public void recordJobSuccess(String jobType, String jobKey, String variables, long executionTimeMs) {
-        recordJobExecution(jobType, jobKey, "COMPLETED", variables, null, executionTimeMs);
+    public void recordJobSuccess(String jobType,
+                                 String jobKey,
+                                 String inputVariables,
+                                 String outputVariables,
+                                 long executionTimeMs) {
+        recordJobExecution(jobType, jobKey, "COMPLETED", inputVariables, outputVariables, null, executionTimeMs);
     }
 
     @Transactional
-    public void recordJobFailure(String jobType, String jobKey, String variables, String errorMessage, long executionTimeMs) {
-        recordJobExecution(jobType, jobKey, "FAILED", variables, errorMessage, executionTimeMs);
+    public void recordJobFailure(String jobType,
+                                 String jobKey,
+                                 String inputVariables,
+                                 String errorMessage,
+                                 long executionTimeMs) {
+        recordJobExecution(jobType, jobKey, "FAILED", inputVariables, null, errorMessage, executionTimeMs);
     }
 }
