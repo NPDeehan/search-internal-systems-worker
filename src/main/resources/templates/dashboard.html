@@ -105,6 +105,9 @@
             <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">Job History</button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">Event Publisher</button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="data-tab" data-bs-toggle="tab" data-bs-target="#datasource" type="button" role="tab">Data Source</button>
         </li>
     </ul>
@@ -236,6 +239,102 @@
                         <i class="fa-solid fa-inbox fs-1 mb-3"></i>
                         <h5>No Job History Found</h5>
                         <p>Job executions will appear here once workers start processing tasks.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-pane fade" id="events" role="tabpanel">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0"><i class="fa-solid fa-bullhorn text-primary me-1"></i>Event Publisher</h5>
+                        <span id="event-connection-status" class="badge bg-secondary">Checking connection...</span>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-3">
+                            <select id="event-type" class="form-select">
+                                <option value="MESSAGE" selected>Message</option>
+                                <option value="SIGNAL">Signal</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <input id="event-name" class="form-control" placeholder="Event name (e.g. CustomerVerified)">
+                        </div>
+                        <div class="col-md-4">
+                            <input id="event-correlation-key" class="form-control" placeholder="Correlation key (required for messages)">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3" id="event-message-advanced-row">
+                        <div class="col-md-4">
+                            <input id="event-message-id" class="form-control" placeholder="Message ID (optional)">
+                        </div>
+                        <div class="col-md-4">
+                            <input id="event-ttl-ms" type="number" min="1" class="form-control" placeholder="TTL ms (optional)">
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button id="event-validate-btn" type="button" class="btn btn-outline-secondary flex-fill">Validate JSON</button>
+                            <button id="event-pretty-btn" type="button" class="btn btn-outline-secondary flex-fill">Pretty JSON</button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="event-payload" class="form-label">Payload (JSON object)</label>
+                        <textarea id="event-payload" class="form-control" rows="8">{
+  "source": "dashboard"
+}</textarea>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <input id="event-preset-name" class="form-control" placeholder="Preset name">
+                        </div>
+                        <div class="col-md-4">
+                            <select id="event-preset-select" class="form-select">
+                                <option value="">Select preset...</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 d-flex gap-2">
+                            <button id="event-save-preset-btn" type="button" class="btn btn-outline-primary flex-fill">Save Preset</button>
+                            <button id="event-load-preset-btn" type="button" class="btn btn-outline-secondary flex-fill">Load</button>
+                            <button id="event-delete-preset-btn" type="button" class="btn btn-outline-danger flex-fill">Delete</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 align-items-center">
+                        <button id="event-send-btn" type="button" class="btn btn-primary">
+                            <i class="fa-solid fa-paper-plane me-1"></i>Send Event
+                        </button>
+                        <small class="text-muted">Sends to the currently connected Camunda cluster.</small>
+                    </div>
+
+                    <div id="event-publish-result" class="alert d-none mt-3 mb-0"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0"><i class="fa-solid fa-clock-rotate-left text-secondary me-1"></i>Dispatch History</h6>
+                        <button id="event-history-clear-btn" type="button" class="btn btn-outline-secondary btn-sm">Clear</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped mb-0">
+                            <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Correlation</th>
+                                <th>Status</th>
+                                <th>Details</th>
+                            </tr>
+                            </thead>
+                            <tbody id="event-dispatch-history-body">
+                            <tr><td colspan="6" class="text-center text-muted py-3">No dispatches yet</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -392,7 +491,9 @@
                                     <div class="card border-0 shadow-sm">
                                         <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                                             <h6 class="mb-0"><i class="fa-solid fa-piggy-bank me-2"></i>Account Records</h6>
-                                            <span class="small text-dark">Read-only</span>
+                                            <button class="btn btn-light btn-sm" onclick="showAddAccountModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Account
+                                            </button>
                                         </div>
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
@@ -557,6 +658,64 @@
     </div>
 </div>
 
+<!-- Account Modal -->
+<div class="modal fade" id="accountModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="accountModalTitle">Add Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="accountModalError" class="alert alert-danger d-none" role="alert"></div>
+                <form id="accountForm">
+                    <div class="mb-3">
+                        <label for="accountIdInput" class="form-label">Account ID *</label>
+                        <input type="number" class="form-control" id="accountIdInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountNumberInput" class="form-label">Account Number *</label>
+                        <input type="text" class="form-control" id="accountNumberInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountTypeInput" class="form-label">Account Type *</label>
+                        <select class="form-select" id="accountTypeInput" required>
+                            <option value="">Select Account Type</option>
+                            <option value="SAVINGS">SAVINGS</option>
+                            <option value="CORPORATE">CORPORATE</option>
+                            <option value="PERSONAL">PERSONAL</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountBalanceInput" class="form-label">Balance *</label>
+                        <input type="number" class="form-control" id="accountBalanceInput" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountCurrencyInput" class="form-label">Currency *</label>
+                        <input type="text" class="form-control" id="accountCurrencyInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountStatusInput" class="form-label">Status *</label>
+                        <input type="text" class="form-control" id="accountStatusInput" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountInterestRateInput" class="form-label">Interest Rate</label>
+                        <input type="number" class="form-control" id="accountInterestRateInput" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountOpenedDateInput" class="form-label">Opened Date</label>
+                        <input type="date" class="form-control" id="accountOpenedDateInput">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveAccountBtn" class="btn btn-warning" onclick="saveAccount()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container position-fixed top-0 end-0 p-3" id="appToastContainer" style="z-index: 1080;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -567,14 +726,25 @@ let jobHistoryAutoRefreshEnabled = false;
 let jobHistoryCurrentPage = 1;
 const jobHistoryExpandedPrefKey = 'dashboard.jobHistory.expandedByDefault';
 let jobHistoryExpandedByDefault = false;
+let eventPresetsCache = [];
+let eventDispatchHistory = [];
 function renderStatusBadge(connected) {
     const el = document.getElementById('connection-status');
+    const eventStatus = document.getElementById('event-connection-status');
     if (connected) {
         el.className = 'status-badge badge bg-success';
         el.textContent = 'Connected';
+        if (eventStatus) {
+            eventStatus.className = 'badge bg-success';
+            eventStatus.textContent = 'Connected';
+        }
     } else {
         el.className = 'status-badge badge bg-danger';
         el.textContent = 'Disconnected';
+        if (eventStatus) {
+            eventStatus.className = 'badge bg-danger';
+            eventStatus.textContent = 'Disconnected';
+        }
     }
 }
 function fetchConnectionStatus() {
@@ -1139,6 +1309,367 @@ function initJobHistoryControls() {
     }
 }
 
+function getEventPayloadObject() {
+    const payloadText = document.getElementById('event-payload').value || '{}';
+    let parsed;
+    try {
+        parsed = JSON.parse(payloadText);
+    } catch (error) {
+        throw new Error('Payload must be valid JSON: ' + error.message);
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Payload must be a JSON object');
+    }
+    return parsed;
+}
+
+function setEventPublishResult(message, type) {
+    const box = document.getElementById('event-publish-result');
+    box.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
+    box.classList.add(`alert-${type}`);
+    box.textContent = message;
+}
+
+function toggleEventFieldsByType() {
+    const type = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
+    const correlation = document.getElementById('event-correlation-key');
+    const advanced = document.getElementById('event-message-advanced-row');
+    if (type === 'SIGNAL') {
+        correlation.closest('.col-md-4').style.display = 'none';
+        advanced.style.display = 'none';
+        correlation.value = '';
+    } else {
+        correlation.closest('.col-md-4').style.display = '';
+        advanced.style.display = '';
+    }
+}
+
+function readEventFormState() {
+    return {
+        eventType: (document.getElementById('event-type').value || 'MESSAGE').toUpperCase(),
+        name: (document.getElementById('event-name').value || '').trim(),
+        correlationKey: (document.getElementById('event-correlation-key').value || '').trim(),
+        messageId: (document.getElementById('event-message-id').value || '').trim(),
+        timeToLiveMs: (document.getElementById('event-ttl-ms').value || '').trim(),
+        payloadText: document.getElementById('event-payload').value || '{}'
+    };
+}
+
+function writeEventFormState(state) {
+    document.getElementById('event-type').value = state.eventType || 'MESSAGE';
+    document.getElementById('event-name').value = state.name || '';
+    document.getElementById('event-correlation-key').value = state.correlationKey || '';
+    document.getElementById('event-message-id').value = state.messageId || '';
+    document.getElementById('event-ttl-ms').value = state.timeToLiveMs || '';
+    document.getElementById('event-payload').value = state.payloadText || '{}';
+    toggleEventFieldsByType();
+}
+
+function validateEventFormState(state) {
+    if (!state.name) {
+        throw new Error('Event name is required');
+    }
+    if (state.eventType === 'MESSAGE' && !state.correlationKey) {
+        throw new Error('Correlation key is required for message events');
+    }
+    const parsed = JSON.parse(state.payloadText || '{}');
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Payload must be a JSON object');
+    }
+}
+
+function prettyEventPayload() {
+    const payload = getEventPayloadObject();
+    document.getElementById('event-payload').value = JSON.stringify(payload, null, 2);
+    setEventPublishResult('Payload JSON is valid.', 'info');
+}
+
+function validateEventPayload() {
+    getEventPayloadObject();
+    setEventPublishResult('Payload JSON is valid.', 'success');
+}
+
+function renderEventPresetOptions() {
+    const select = document.getElementById('event-preset-select');
+    const selected = select.value;
+    select.innerHTML = '<option value="">Select preset...</option>';
+    eventPresetsCache.forEach(preset => {
+        const option = document.createElement('option');
+        option.value = String(preset.id);
+        option.textContent = preset.name;
+        select.appendChild(option);
+    });
+    if (selected && eventPresetsCache.some(preset => String(preset.id) === selected)) {
+        select.value = selected;
+    }
+}
+
+function loadEventPresets(preferredSelectedId = null) {
+    const eventType = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
+    return fetch(`/api/engine/event-presets?eventType=${encodeURIComponent(eventType)}`)
+        .then(async response => {
+            const json = await response.json().catch(() => []);
+            if (!response.ok) {
+                throw new Error(json.message || json.error || `HTTP ${response.status}`);
+            }
+            return Array.isArray(json) ? json : [];
+        })
+        .then(presets => {
+            eventPresetsCache = presets;
+            renderEventPresetOptions();
+            if (preferredSelectedId !== null) {
+                const select = document.getElementById('event-preset-select');
+                select.value = String(preferredSelectedId);
+            }
+        })
+        .catch(error => {
+            eventPresetsCache = [];
+            renderEventPresetOptions();
+            setEventPublishResult(`Failed to load presets: ${error.message}`, 'warning');
+        });
+}
+
+function saveCurrentAsPreset() {
+    const presetName = (document.getElementById('event-preset-name').value || '').trim();
+    if (!presetName) {
+        setEventPublishResult('Preset name is required.', 'warning');
+        return;
+    }
+    const state = readEventFormState();
+    const requestBody = {
+        name: presetName,
+        eventType: state.eventType,
+        eventName: state.name,
+        correlationKey: state.eventType === 'MESSAGE' ? state.correlationKey : null,
+        messageId: state.eventType === 'MESSAGE' ? state.messageId || null : null,
+        timeToLiveMs: state.eventType === 'MESSAGE' && state.timeToLiveMs ? Number(state.timeToLiveMs) : null,
+        payloadText: state.payloadText
+    };
+
+    fetch('/api/engine/event-presets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+    })
+        .then(async response => {
+            const json = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(json.message || json.error || `HTTP ${response.status}`);
+            }
+            return json;
+        })
+        .then(savedPreset => {
+            setEventPublishResult(`Saved preset: ${savedPreset.name}`, 'success');
+            return loadEventPresets(savedPreset.id);
+        })
+        .catch(error => {
+            setEventPublishResult(`Failed to save preset: ${error.message}`, 'danger');
+        });
+}
+
+function loadSelectedPreset() {
+    const id = document.getElementById('event-preset-select').value;
+    const preset = eventPresetsCache.find(item => String(item.id) === id);
+    if (!id || !preset) {
+        setEventPublishResult('Select a preset to load.', 'warning');
+        return;
+    }
+    writeEventFormState({
+        eventType: preset.eventType,
+        name: preset.eventName,
+        correlationKey: preset.correlationKey,
+        messageId: preset.messageId,
+        timeToLiveMs: preset.timeToLiveMs,
+        payloadText: preset.payloadText
+    });
+    document.getElementById('event-preset-name').value = preset.name;
+    setEventPublishResult(`Loaded preset: ${preset.name}`, 'info');
+}
+
+function deleteSelectedPreset() {
+    const id = document.getElementById('event-preset-select').value;
+    const preset = eventPresetsCache.find(item => String(item.id) === id);
+    if (!id || !preset) {
+        setEventPublishResult('Select a preset to delete.', 'warning');
+        return;
+    }
+
+    fetch(`/api/engine/event-presets/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+    })
+        .then(async response => {
+            const json = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(json.message || json.error || `HTTP ${response.status}`);
+            }
+            return json;
+        })
+        .then(() => {
+            setEventPublishResult(`Deleted preset: ${preset.name}`, 'info');
+            document.getElementById('event-preset-name').value = '';
+            return loadEventPresets();
+        })
+        .catch(error => {
+            setEventPublishResult(`Failed to delete preset: ${error.message}`, 'danger');
+        });
+}
+
+function formatDispatchTime(value) {
+    if (!value) {
+        return '';
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
+}
+
+function renderEventDispatchHistory() {
+    const tbody = document.getElementById('event-dispatch-history-body');
+    if (!eventDispatchHistory.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No dispatches yet</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = eventDispatchHistory
+        .map(entry => `
+            <tr>
+                <td>${escapeHtml(formatDispatchTime(entry.time || ''))}</td>
+                <td><span class="badge bg-light text-dark border">${escapeHtml(entry.eventType || '')}</span></td>
+                <td>${escapeHtml(entry.name || '')}</td>
+                <td>${escapeHtml(entry.correlationKey || '-')}</td>
+                <td><span class="badge bg-${entry.success ? 'success' : 'danger'}">${entry.success ? 'SUCCESS' : 'FAILED'}</span></td>
+                <td><small>${escapeHtml(entry.detail || '')}</small></td>
+            </tr>
+        `)
+        .join('');
+}
+
+function loadEventDispatchHistory() {
+    const eventType = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
+    return fetch(`/api/engine/event-dispatches?eventType=${encodeURIComponent(eventType)}&limit=50`)
+        .then(async response => {
+            const json = await response.json().catch(() => []);
+            if (!response.ok) {
+                throw new Error(json.message || json.error || `HTTP ${response.status}`);
+            }
+            return Array.isArray(json) ? json : [];
+        })
+        .then(history => {
+            eventDispatchHistory = history;
+            renderEventDispatchHistory();
+        })
+        .catch(error => {
+            eventDispatchHistory = [];
+            renderEventDispatchHistory();
+            setEventPublishResult(`Failed to load dispatch history: ${error.message}`, 'warning');
+        });
+}
+
+function clearDispatchHistory() {
+    const eventType = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
+    fetch(`/api/engine/event-dispatches?eventType=${encodeURIComponent(eventType)}`, {
+        method: 'DELETE'
+    })
+        .then(async response => {
+            const json = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(json.message || json.error || `HTTP ${response.status}`);
+            }
+            return json;
+        })
+        .then(() => {
+            eventDispatchHistory = [];
+            renderEventDispatchHistory();
+            setEventPublishResult('Dispatch history cleared for selected type.', 'info');
+        })
+        .catch(error => {
+            setEventPublishResult(`Failed to clear dispatch history: ${error.message}`, 'danger');
+        });
+}
+
+function publishEventToEngine() {
+    const state = readEventFormState();
+
+    try {
+        validateEventFormState(state);
+    } catch (error) {
+        setEventPublishResult(error.message, 'danger');
+        return;
+    }
+
+    let variables;
+    try {
+        variables = getEventPayloadObject();
+    } catch (error) {
+        setEventPublishResult(error.message, 'danger');
+        return;
+    }
+
+    const requestBody = {
+        eventType: state.eventType,
+        name: state.name,
+        variables
+    };
+
+    if (state.eventType === 'MESSAGE') {
+        requestBody.correlationKey = state.correlationKey;
+        if (state.messageId) {
+            requestBody.messageId = state.messageId;
+        }
+        if (state.timeToLiveMs) {
+            requestBody.timeToLiveMs = Number(state.timeToLiveMs);
+        }
+    }
+
+    const sendButton = document.getElementById('event-send-btn');
+    sendButton.disabled = true;
+
+    fetch('/api/engine/events/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+    })
+        .then(async response => {
+            const json = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(json.message || json.error || `HTTP ${response.status}`);
+            }
+            return json;
+        })
+        .then(result => {
+            const detail = result.details && (result.details.messageKey || result.details.signalKey)
+                ? `key=${result.details.messageKey || result.details.signalKey}`
+                : 'accepted';
+            setEventPublishResult(`${state.eventType} sent successfully (${detail})`, 'success');
+            return loadEventDispatchHistory();
+        })
+        .catch(error => {
+            setEventPublishResult(`Failed to publish event: ${error.message}`, 'danger');
+            return loadEventDispatchHistory();
+        })
+        .finally(() => {
+            sendButton.disabled = false;
+        });
+}
+
+function initEventPublisherControls() {
+    loadEventPresets();
+    loadEventDispatchHistory();
+    toggleEventFieldsByType();
+
+    document.getElementById('event-type').addEventListener('change', () => {
+        toggleEventFieldsByType();
+        loadEventPresets();
+        loadEventDispatchHistory();
+    });
+    document.getElementById('event-send-btn').addEventListener('click', publishEventToEngine);
+    document.getElementById('event-pretty-btn').addEventListener('click', prettyEventPayload);
+    document.getElementById('event-validate-btn').addEventListener('click', validateEventPayload);
+    document.getElementById('event-save-preset-btn').addEventListener('click', saveCurrentAsPreset);
+    document.getElementById('event-load-preset-btn').addEventListener('click', loadSelectedPreset);
+    document.getElementById('event-delete-preset-btn').addEventListener('click', deleteSelectedPreset);
+    document.getElementById('event-history-clear-btn').addEventListener('click', clearDispatchHistory);
+}
+
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -1360,7 +1891,7 @@ function renderTable(data, tableId) {
         if (includeActions) {
             const config = entityTableMap[entityType];
             const entityId = config ? row[config.idField] : null;
-            const canEdit = entityType === 'customers' || entityType === 'employees' || entityType === 'companies';
+            const canEdit = entityType === 'customers' || entityType === 'employees' || entityType === 'companies' || entityType === 'accounts';
             const canDelete = entityId !== null && entityId !== undefined;
 
             let actionsHtml = '';
@@ -1474,6 +2005,7 @@ function refreshAll() {
 refreshAll();
 initTableTools();
 initJobHistoryControls();
+initEventPublisherControls();
 setInterval(() => {
     fetchConnectionStatus();
     fetchWorkerStatus();
@@ -1516,6 +2048,16 @@ function showAddCompanyModal() {
     document.getElementById('companyIdInput').disabled = false;
     clearModalError('companyModalError');
     new bootstrap.Modal(document.getElementById('companyModal')).show();
+}
+
+function showAddAccountModal() {
+    currentEditId = null;
+    currentEditType = 'accounts';
+    document.getElementById('accountModalTitle').textContent = 'Add Account';
+    document.getElementById('accountForm').reset();
+    document.getElementById('accountIdInput').disabled = false;
+    clearModalError('accountModalError');
+    new bootstrap.Modal(document.getElementById('accountModal')).show();
 }
 
 function editEntity(entityType, entityId) {
@@ -1587,6 +2129,30 @@ function editEntity(entityType, entityId) {
                 new bootstrap.Modal(document.getElementById('companyModal')).show();
             })
             .catch(e => showModalError('companyModalError', e.message));
+    } else if (entityType === 'accounts') {
+        clearModalError('accountModalError');
+        fetch(`/api/accounts/${entityId}`)
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    throw new Error(extractApiErrorMessage(data, `Failed to load account (${r.status})`));
+                }
+                return data;
+            })
+            .then(account => {
+                document.getElementById('accountModalTitle').textContent = 'Edit Account';
+                document.getElementById('accountIdInput').value = account.accountId;
+                document.getElementById('accountIdInput').disabled = true;
+                document.getElementById('accountNumberInput').value = account.accountNumber || '';
+                document.getElementById('accountTypeInput').value = account.accountType || '';
+                document.getElementById('accountBalanceInput').value = account.balance || '';
+                document.getElementById('accountCurrencyInput').value = account.currency || '';
+                document.getElementById('accountStatusInput').value = account.status || '';
+                document.getElementById('accountInterestRateInput').value = account.interestRate || '';
+                document.getElementById('accountOpenedDateInput').value = account.openedDate || '';
+                new bootstrap.Modal(document.getElementById('accountModal')).show();
+            })
+            .catch(e => showModalError('accountModalError', e.message));
     }
 }
 
@@ -1843,6 +2409,55 @@ function saveCompany() {
     })
     .catch(e => showModalError('companyModalError', e.message))
     .finally(() => setSaveButtonState('saveCompanyBtn', false));
+}
+
+function saveAccount() {
+    clearModalError('accountModalError');
+    if (!validateForm('accountForm')) {
+        return;
+    }
+
+    const account = {
+        accountId: parseInt(document.getElementById('accountIdInput').value),
+        accountNumber: normalizeText(document.getElementById('accountNumberInput').value),
+        accountType: document.getElementById('accountTypeInput').value,
+        balance: parseFloat(document.getElementById('accountBalanceInput').value),
+        currency: normalizeText(document.getElementById('accountCurrencyInput').value),
+        status: normalizeText(document.getElementById('accountStatusInput').value),
+        interestRate: document.getElementById('accountInterestRateInput').value ? parseFloat(document.getElementById('accountInterestRateInput').value) : null,
+        openedDate: document.getElementById('accountOpenedDateInput').value || null
+    };
+
+    if (!currentEditId && entityExistsInCache('accounts', account.accountId)) {
+        showModalError('accountModalError', 'An account with this ID already exists.');
+        return;
+    }
+
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/accounts/${currentEditId}` : '/api/accounts';
+    setSaveButtonState('saveAccountBtn', true);
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(account)
+    })
+    .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            throw new Error(extractApiErrorMessage(data, `Save failed (${r.status})`));
+        }
+        return data;
+    })
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('accountModal')).hide();
+        if (!applyOptimisticEntitySave('accounts', data, Boolean(currentEditId))) {
+            refreshDataTables();
+        }
+        showToast(currentEditId ? 'Account updated successfully.' : 'Account created successfully.');
+    })
+    .catch(e => showModalError('accountModalError', e.message))
+    .finally(() => setSaveButtonState('saveAccountBtn', false));
 }
 
 function loadEmployeeOptions(selectedEmployeeId = null) {
