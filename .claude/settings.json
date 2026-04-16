@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(taskkill /PID 2728 /F)",
+      "Bash(cmd.exe /c \"taskkill /PID 2728 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 2728 /F /T\")",
+      "Bash(cmd.exe /c \"wmic process where ProcessId=2728 get Name,CommandLine,ProcessId 2>&1\")",
+      "Bash(powershell.exe -Command \"Get-Process -Id 2728 -ErrorAction SilentlyContinue | Select-Object Name,Id,Path\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 2728 -Force; Start-Sleep 1; Get-NetTCPConnection -LocalPort 8081 -ErrorAction SilentlyContinue\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 2728 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(powershell.exe -Command \"Get-Process -Id 2728 -ErrorAction SilentlyContinue\")",
+      "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 8081 -ErrorAction SilentlyContinue | Select-Object State,OwningProcess\")",
+      "Bash(curl -s -X DELETE http://localhost:8081/api/insurance-policies/144 -w \"\\\\nHTTP Status: %{http_code}\")",
+      "Bash(powershell.exe -Command ':*)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/Users/NiallDeehan/Documents/GitHub/search-internal-systems-worker/element-templates/manage-insurance-policy.json','utf8'\\)\\); console.log\\('Valid JSON'\\)\")"
+    ]
+  }
+}

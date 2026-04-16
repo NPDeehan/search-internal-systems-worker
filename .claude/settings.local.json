@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn spring-boot:run)",
+      "Bash(curl -s http://localhost:8081/api/insurance-policies)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Total policies: {len\\(d\\)}'\\); [print\\(f'  {p[\\\\\"policyId\\\\\"]:>4} {p[\\\\\"policyNumber\\\\\"]} {p[\\\\\"policyType\\\\\"]:<18} {p[\\\\\"holderType\\\\\"]:<18} {p[\\\\\"status\\\\\"]}'\\) for p in d[:10]]; print\\('  ...' if len\\(d\\)>10 else ''\\)\")",
+      "Bash(echo \"PID: $!\")",
+      "Bash(netstat -ano)"
+    ]
+  }
+}

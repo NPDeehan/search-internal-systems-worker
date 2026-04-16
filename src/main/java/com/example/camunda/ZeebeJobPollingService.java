@@ -11,6 +11,7 @@ import com.example.camunda.worker.CompanyCrudWorker;
 import com.example.camunda.worker.CustomerCrudWorker;
 import com.example.camunda.worker.CustomerAccountLinkWorker;
 import com.example.camunda.worker.EmployeeCrudWorker;
+import com.example.camunda.worker.InsurancePolicyCrudWorker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -42,6 +43,7 @@ public class ZeebeJobPollingService {
     private final EmployeeCrudWorker employeeCrudWorker;
     private final CompanyCrudWorker companyCrudWorker;
     private final CustomerAccountLinkWorker customerAccountLinkWorker;
+    private final InsurancePolicyCrudWorker insurancePolicyCrudWorker;
     private final JobHistoryService jobHistoryService;
     
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -56,6 +58,7 @@ public class ZeebeJobPollingService {
                                   EmployeeCrudWorker employeeCrudWorker,
                                   CompanyCrudWorker companyCrudWorker,
                                   CustomerAccountLinkWorker customerAccountLinkWorker,
+                                  InsurancePolicyCrudWorker insurancePolicyCrudWorker,
                                   JobHistoryService jobHistoryService) {
         this.zeebeConnectionService = zeebeConnectionService;
         this.matchWorker = matchWorker;
@@ -67,6 +70,7 @@ public class ZeebeJobPollingService {
         this.employeeCrudWorker = employeeCrudWorker;
         this.companyCrudWorker = companyCrudWorker;
         this.customerAccountLinkWorker = customerAccountLinkWorker;
+        this.insurancePolicyCrudWorker = insurancePolicyCrudWorker;
         this.jobHistoryService = jobHistoryService;
     }
 
@@ -151,6 +155,14 @@ public class ZeebeJobPollingService {
     public void pollCustomerAccountLinkJobs() {
         if (isRunning.get()) {
             pollJobs("manage-customer-account-link", customerAccountLinkWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollInsurancePolicyCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-insurance-policy", insurancePolicyCrudWorker::handleJob);
         }
     }
 

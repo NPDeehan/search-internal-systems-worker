@@ -387,6 +387,16 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light border-0">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-shield-halved text-danger fs-2 mb-2"></i>
+                                    <h6 class="card-title">Insurance Policies</h6>
+                                    <span id="policies-count" class="fs-4 fw-bold text-danger">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Data Tables with improved layout -->
@@ -416,6 +426,11 @@
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="links-data-tab" data-bs-toggle="pill" data-bs-target="#links-data" type="button" role="tab">
                                         <i class="fa-solid fa-link me-1"></i>Customer Accounts
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="policies-data-tab" data-bs-toggle="pill" data-bs-target="#policies-data" type="button" role="tab">
+                                        <i class="fa-solid fa-shield-halved me-1"></i>Insurance Policies
                                     </button>
                                 </li>
                             </ul>
@@ -511,6 +526,21 @@
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
                                                 <table class="table table-hover mb-0" id="links-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="policies-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-shield-halved me-2"></i>Insurance Policy Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddPolicyModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Policy
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="policies-table"></table>
                                             </div>
                                         </div>
                                     </div>
@@ -716,6 +746,177 @@
     </div>
 </div>
 
+<!-- Insurance Policy Modal -->
+<div class="modal fade" id="policyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="policyModalTitle">Add Insurance Policy</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="policyModalError" class="alert alert-danger d-none" role="alert"></div>
+                <form id="policyForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="policyIdInput" class="form-label">Policy ID</label>
+                            <input type="number" class="form-control" id="policyIdInput">
+                            <div class="form-text">Auto-generated if left blank</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyNumberInput" class="form-label">Policy Number</label>
+                            <input type="text" class="form-control" id="policyNumberInput" placeholder="e.g. POL-000001">
+                            <div class="form-text">Auto-generated if left blank</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyTypeInput" class="form-label">Policy Type *</label>
+                            <select class="form-select" id="policyTypeInput" required onchange="updatePolicyTypeFields()">
+                                <option value="">Select Type</option>
+                                <option value="CAR">CAR</option>
+                                <option value="HOME">HOME</option>
+                                <option value="PET">PET</option>
+                                <option value="LONG_TERM_INJURY">LONG_TERM_INJURY</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyStatusInput" class="form-label">Status *</label>
+                            <select class="form-select" id="policyStatusInput" required>
+                                <option value="ACTIVE">ACTIVE</option>
+                                <option value="INACTIVE">INACTIVE</option>
+                                <option value="EXPIRED">EXPIRED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyHolderTypeInput" class="form-label">Holder Type *</label>
+                            <select class="form-select" id="policyHolderTypeInput" required onchange="updatePolicyHolderFields()">
+                                <option value="CUSTOMER">CUSTOMER</option>
+                                <option value="EXTERNAL_COMPANY">EXTERNAL_COMPANY</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="policyCustomerIdGroup">
+                            <label for="policyCustomerIdInput" class="form-label">Customer ID *</label>
+                            <input type="number" class="form-control" id="policyCustomerIdInput">
+                        </div>
+                        <div class="col-md-4 d-none" id="policyCompanyIdGroup">
+                            <label for="policyCompanyIdInput" class="form-label">Company ID *</label>
+                            <input type="number" class="form-control" id="policyCompanyIdInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyStartDateInput" class="form-label">Start Date *</label>
+                            <input type="date" class="form-control" id="policyStartDateInput" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyEndDateInput" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="policyEndDateInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyPremiumInput" class="form-label">Premium Amount *</label>
+                            <input type="number" class="form-control" id="policyPremiumInput" step="0.01" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="policyCoverageInput" class="form-label">Coverage Amount *</label>
+                            <input type="number" class="form-control" id="policyCoverageInput" step="0.01" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="policyNotesInput" class="form-label">Notes</label>
+                            <textarea class="form-control" id="policyNotesInput" rows="2"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- CAR fields -->
+                    <div id="carFields" class="d-none mt-3 border-top pt-3">
+                        <h6 class="text-muted mb-3"><i class="fa-solid fa-car me-1"></i>Car Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="vehicleRegInput" class="form-label">Registration</label>
+                                <input type="text" class="form-control" id="vehicleRegInput">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="vehicleMakeInput" class="form-label">Make</label>
+                                <input type="text" class="form-control" id="vehicleMakeInput">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="vehicleModelInput" class="form-label">Model</label>
+                                <input type="text" class="form-control" id="vehicleModelInput">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="vehicleYearInput" class="form-label">Year</label>
+                                <input type="number" class="form-control" id="vehicleYearInput" min="1900" max="2100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HOME fields -->
+                    <div id="homeFields" class="d-none mt-3 border-top pt-3">
+                        <h6 class="text-muted mb-3"><i class="fa-solid fa-house me-1"></i>Property Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="propertyAddressInput" class="form-label">Property Address</label>
+                                <input type="text" class="form-control" id="propertyAddressInput">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="propertyTypeInput" class="form-label">Property Type</label>
+                                <input type="text" class="form-control" id="propertyTypeInput" placeholder="e.g. House">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="propertyValueInput" class="form-label">Property Value</label>
+                                <input type="number" class="form-control" id="propertyValueInput" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PET fields -->
+                    <div id="petFields" class="d-none mt-3 border-top pt-3">
+                        <h6 class="text-muted mb-3"><i class="fa-solid fa-paw me-1"></i>Pet Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label for="petNameInput" class="form-label">Pet Name</label>
+                                <input type="text" class="form-control" id="petNameInput">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="petSpeciesInput" class="form-label">Species</label>
+                                <input type="text" class="form-control" id="petSpeciesInput" placeholder="e.g. Dog">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="petBreedInput" class="form-label">Breed</label>
+                                <input type="text" class="form-control" id="petBreedInput">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="petAgeInput" class="form-label">Age (years)</label>
+                                <input type="number" class="form-control" id="petAgeInput" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LONG_TERM_INJURY fields -->
+                    <div id="ltiFields" class="d-none mt-3 border-top pt-3">
+                        <h6 class="text-muted mb-3"><i class="fa-solid fa-person-cane me-1"></i>Long Term Injury Details</h6>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="monthlyBenefitInput" class="form-label">Monthly Benefit</label>
+                                <input type="number" class="form-control" id="monthlyBenefitInput" step="0.01">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="waitingPeriodInput" class="form-label">Waiting Period (days)</label>
+                                <input type="number" class="form-control" id="waitingPeriodInput" min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="maxBenefitMonthsInput" class="form-label">Max Benefit Period (months)</label>
+                                <input type="number" class="form-control" id="maxBenefitMonthsInput" min="1">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="savePolicyBtn" class="btn btn-danger" onclick="savePolicy()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container position-fixed top-0 end-0 p-3" id="appToastContainer" style="z-index: 1080;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -824,6 +1025,12 @@ function getWorkerInfo(jobType) {
                 name: 'Account Search',
                 description: 'Searches account records and customer-account relationships',
                 icon: 'fa-piggy-bank'
+            };
+        case 'manage-insurance-policy':
+            return {
+                name: 'Insurance Policy Manager',
+                description: 'Creates, updates, deletes and queries insurance policies (CAR, HOME, PET, LONG_TERM_INJURY)',
+                icon: 'fa-shield-halved'
             };
         default:
             return {
@@ -1685,31 +1892,35 @@ const entityTableMap = {
     customers: { tableId: 'customers-table', idField: 'customerId' },
     employees: { tableId: 'employees-table', idField: 'employeeId' },
     companies: { tableId: 'companies-table', idField: 'companyId' },
-    accounts: { tableId: 'accounts-table', idField: 'accountId' }
+    accounts:  { tableId: 'accounts-table',  idField: 'accountId'  },
+    policies:  { tableId: 'policies-table',  idField: 'policyId',   apiPath: 'insurance-policies', displayColumns: ['policyId','policyNumber','policyType','status','holderType','customerId','premiumAmount','coverageAmount','startDate','endDate'] }
 };
 
 const tableDataCache = {
     'customers-table': [],
     'employees-table': [],
     'companies-table': [],
-    'accounts-table': [],
-    'links-table': []
+    'accounts-table':  [],
+    'links-table':     [],
+    'policies-table':  []
 };
 
 const tableViewState = {
     'customers-table': { filter: '', sortKey: '', sortDir: 'asc' },
     'employees-table': { filter: '', sortKey: '', sortDir: 'asc' },
     'companies-table': { filter: '', sortKey: '', sortDir: 'asc' },
-    'accounts-table': { filter: '', sortKey: '', sortDir: 'asc' },
-    'links-table': { filter: '', sortKey: '', sortDir: 'asc' }
+    'accounts-table':  { filter: '', sortKey: '', sortDir: 'asc' },
+    'links-table':     { filter: '', sortKey: '', sortDir: 'asc' },
+    'policies-table':  { filter: '', sortKey: '', sortDir: 'asc' }
 };
 
 const tabPaneToTableMap = {
     'customers-data': 'customers-table',
     'employees-data': 'employees-table',
     'companies-data': 'companies-table',
-    'accounts-data': 'accounts-table',
-    'links-data': 'links-table'
+    'accounts-data':  'accounts-table',
+    'links-data':     'links-table',
+    'policies-data':  'policies-table'
 };
 
 let activeTableId = 'customers-table';
@@ -1861,14 +2072,16 @@ function renderTable(data, tableId) {
         }
         return;
     }
-    const keys = Object.keys((data && data[0]) ? data[0] : processedData[0]);
+    const allKeys = Object.keys((data && data[0]) ? data[0] : processedData[0]);
     const entityType = tableId.replace('-table', '');
-    const includeActions = Object.prototype.hasOwnProperty.call(entityTableMap, entityType);
-    const actionKeys = includeActions ? [...keys, 'actions'] : keys;
+    const config = entityTableMap[entityType];
+    const includeActions = !!config;
+    const keys = (config && config.displayColumns) ? config.displayColumns : allKeys;
+    const actionKeys = includeActions ? ['actions', ...keys] : keys;
     const state = getCurrentTableState(tableId);
-    
-    // Create header
-    el.innerHTML += '<thead class="table-light"><tr>' + 
+
+    // Create header — Actions is always the first column
+    el.innerHTML += '<thead class="table-light"><tr>' +
         actionKeys.map(k => {
             if (k === 'actions') {
                 return '<th class="fw-semibold">Actions</th>';
@@ -1876,38 +2089,33 @@ function renderTable(data, tableId) {
             const isSorted = state.sortKey === k;
             const sortSymbol = isSorted ? (state.sortDir === 'asc' ? ' ▲' : ' ▼') : '';
             return `<th class="fw-semibold"><button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-reset" onclick="setTableSort('${tableId}','${k}')">${k}${sortSymbol}</button></th>`;
-        }).join('') + 
+        }).join('') +
         '</tr></thead>';
-    
-    // Create body with action buttons
+
+    // Create body — Actions cell rendered first, then data columns
     let tbody = '<tbody>';
     processedData.forEach(row => {
         tbody += '<tr>';
-        keys.forEach(k => {
-            tbody += `<td>${row[k] || ''}</td>`;
-        });
-        
-        // Add action buttons based on table type
+
         if (includeActions) {
-            const config = entityTableMap[entityType];
             const entityId = config ? row[config.idField] : null;
-            const canEdit = entityType === 'customers' || entityType === 'employees' || entityType === 'companies' || entityType === 'accounts';
+            const canEdit = entityType === 'customers' || entityType === 'employees' || entityType === 'companies' || entityType === 'accounts' || entityType === 'policies';
             const canDelete = entityId !== null && entityId !== undefined;
 
             let actionsHtml = '';
             if (canEdit && canDelete) {
-                actionsHtml += `<button class="btn btn-sm btn-outline-primary me-1" onclick="editEntity('${entityType}', ${entityId})" title="Edit">
-                    <i class="fa-solid fa-edit"></i>
-                </button>`;
+                actionsHtml += `<button class="btn btn-sm btn-outline-primary me-1" onclick="editEntity('${entityType}', ${entityId})" title="Edit"><i class="fa-solid fa-edit"></i></button>`;
             }
             if (canDelete) {
-                actionsHtml += `<button class="btn btn-sm btn-outline-danger" onclick="deleteEntity('${entityType}', ${entityId})" title="Delete">
-                    <i class="fa-solid fa-trash"></i>
-                </button>`;
+                actionsHtml += `<button class="btn btn-sm btn-outline-danger" onclick="deleteEntity('${entityType}', ${entityId})" title="Delete"><i class="fa-solid fa-trash"></i></button>`;
             }
-
-            tbody += `<td>${actionsHtml || ''}</td>`;
+            tbody += `<td style="white-space:nowrap">${actionsHtml || ''}</td>`;
         }
+
+        keys.forEach(k => {
+            tbody += `<td>${row[k] !== null && row[k] !== undefined ? row[k] : ''}</td>`;
+        });
+
         tbody += '</tr>';
     });
     tbody += '</tbody>';
@@ -1922,6 +2130,8 @@ function renderTable(data, tableId) {
         document.getElementById('companies-count').textContent = processedData.length;
     } else if (tableId === 'accounts-table') {
         document.getElementById('accounts-count').textContent = processedData.length;
+    } else if (tableId === 'policies-table') {
+        document.getElementById('policies-count').textContent = processedData.length;
     }
 
     if (tableId === activeTableId) {
@@ -2001,6 +2211,7 @@ function refreshAll() {
     fetchAndRenderTable('/api/companies', 'companies-table');
     fetchAndRenderTable('/api/accounts', 'accounts-table');
     fetchAndRenderTable('/api/customer-accounts', 'links-table');
+    fetchAndRenderTable('/api/insurance-policies', 'policies-table');
 }
 refreshAll();
 initTableTools();
@@ -2153,12 +2364,57 @@ function editEntity(entityType, entityId) {
                 new bootstrap.Modal(document.getElementById('accountModal')).show();
             })
             .catch(e => showModalError('accountModalError', e.message));
+    } else if (entityType === 'policies') {
+        clearModalError('policyModalError');
+        fetch(`/api/insurance-policies/${entityId}`)
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    throw new Error(extractApiErrorMessage(data, `Failed to load policy (${r.status})`));
+                }
+                return data;
+            })
+            .then(policy => {
+                document.getElementById('policyModalTitle').textContent = 'Edit Insurance Policy';
+                document.getElementById('policyIdInput').value = policy.policyId;
+                document.getElementById('policyIdInput').disabled = true;
+                document.getElementById('policyNumberInput').value = policy.policyNumber || '';
+                document.getElementById('policyTypeInput').value = policy.policyType || '';
+                document.getElementById('policyStatusInput').value = policy.status || 'ACTIVE';
+                document.getElementById('policyHolderTypeInput').value = policy.holderType || 'CUSTOMER';
+                document.getElementById('policyCustomerIdInput').value = policy.customerId || '';
+                document.getElementById('policyCompanyIdInput').value = policy.companyId || '';
+                document.getElementById('policyStartDateInput').value = policy.startDate || '';
+                document.getElementById('policyEndDateInput').value = policy.endDate || '';
+                document.getElementById('policyPremiumInput').value = policy.premiumAmount || '';
+                document.getElementById('policyCoverageInput').value = policy.coverageAmount || '';
+                document.getElementById('policyNotesInput').value = policy.notes || '';
+                document.getElementById('vehicleRegInput').value = policy.vehicleRegistration || '';
+                document.getElementById('vehicleMakeInput').value = policy.vehicleMake || '';
+                document.getElementById('vehicleModelInput').value = policy.vehicleModel || '';
+                document.getElementById('vehicleYearInput').value = policy.vehicleYear || '';
+                document.getElementById('propertyAddressInput').value = policy.propertyAddress || '';
+                document.getElementById('propertyTypeInput').value = policy.propertyType || '';
+                document.getElementById('propertyValueInput').value = policy.propertyValue || '';
+                document.getElementById('petNameInput').value = policy.petName || '';
+                document.getElementById('petSpeciesInput').value = policy.petSpecies || '';
+                document.getElementById('petBreedInput').value = policy.petBreed || '';
+                document.getElementById('petAgeInput').value = policy.petAge || '';
+                document.getElementById('monthlyBenefitInput').value = policy.monthlyBenefit || '';
+                document.getElementById('waitingPeriodInput').value = policy.waitingPeriodDays || '';
+                document.getElementById('maxBenefitMonthsInput').value = policy.maxBenefitPeriodMonths || '';
+                updatePolicyTypeFields();
+                updatePolicyHolderFields();
+                new bootstrap.Modal(document.getElementById('policyModal')).show();
+            })
+            .catch(e => showModalError('policyModalError', e.message));
     }
 }
 
 function deleteEntity(entityType, entityId) {
     if (confirm(`Are you sure you want to delete this ${entityType.slice(0, -1)}?`)) {
-        fetch(`/api/${entityType}/${entityId}`, { method: 'DELETE' })
+        const apiPath = (entityTableMap[entityType] && entityTableMap[entityType].apiPath) || entityType;
+        fetch(`/api/${apiPath}/${entityId}`, { method: 'DELETE' })
             .then(async r => {
                 const data = await r.json().catch(() => ({}));
                 if (!r.ok) {
@@ -2480,6 +2736,120 @@ function refreshDataTables() {
     fetchAndRenderTable('/api/companies', 'companies-table');
     fetchAndRenderTable('/api/accounts', 'accounts-table');
     fetchAndRenderTable('/api/customer-accounts', 'links-table');
+    fetchAndRenderTable('/api/insurance-policies', 'policies-table');
+}
+
+function showAddPolicyModal() {
+    currentEditId = null;
+    currentEditType = 'policies';
+    document.getElementById('policyModalTitle').textContent = 'Add Insurance Policy';
+    document.getElementById('policyForm').reset();
+    document.getElementById('policyIdInput').disabled = false;
+    clearModalError('policyModalError');
+    updatePolicyTypeFields();
+    updatePolicyHolderFields();
+    new bootstrap.Modal(document.getElementById('policyModal')).show();
+}
+
+function updatePolicyTypeFields() {
+    const type = document.getElementById('policyTypeInput').value;
+    document.getElementById('carFields').classList.toggle('d-none', type !== 'CAR');
+    document.getElementById('homeFields').classList.toggle('d-none', type !== 'HOME');
+    document.getElementById('petFields').classList.toggle('d-none', type !== 'PET');
+    document.getElementById('ltiFields').classList.toggle('d-none', type !== 'LONG_TERM_INJURY');
+}
+
+function updatePolicyHolderFields() {
+    const holder = document.getElementById('policyHolderTypeInput').value;
+    document.getElementById('policyCustomerIdGroup').classList.toggle('d-none', holder !== 'CUSTOMER');
+    document.getElementById('policyCompanyIdGroup').classList.toggle('d-none', holder !== 'EXTERNAL_COMPANY');
+}
+
+function savePolicy() {
+    clearModalError('policyModalError');
+    if (!validateForm('policyForm')) {
+        return;
+    }
+
+    const holderType = document.getElementById('policyHolderTypeInput').value;
+    const policyType = document.getElementById('policyTypeInput').value;
+    const policyIdVal = document.getElementById('policyIdInput').value;
+    const policyNumberVal = document.getElementById('policyNumberInput').value.trim();
+
+    const policy = {
+        policyId: policyIdVal ? parseInt(policyIdVal) : null,
+        policyNumber: policyNumberVal || null,
+        policyType: policyType,
+        status: document.getElementById('policyStatusInput').value,
+        holderType: holderType,
+        customerId: holderType === 'CUSTOMER' ? parseInt(document.getElementById('policyCustomerIdInput').value) : null,
+        companyId: holderType === 'EXTERNAL_COMPANY' ? parseInt(document.getElementById('policyCompanyIdInput').value) : null,
+        startDate: document.getElementById('policyStartDateInput').value || null,
+        endDate: document.getElementById('policyEndDateInput').value || null,
+        premiumAmount: parseFloat(document.getElementById('policyPremiumInput').value),
+        coverageAmount: parseFloat(document.getElementById('policyCoverageInput').value),
+        notes: normalizeText(document.getElementById('policyNotesInput').value) || null
+    };
+
+    if (policyType === 'CAR') {
+        policy.vehicleRegistration = normalizeText(document.getElementById('vehicleRegInput').value) || null;
+        policy.vehicleMake = normalizeText(document.getElementById('vehicleMakeInput').value) || null;
+        policy.vehicleModel = normalizeText(document.getElementById('vehicleModelInput').value) || null;
+        const yr = document.getElementById('vehicleYearInput').value;
+        policy.vehicleYear = yr ? parseInt(yr) : null;
+    }
+    if (policyType === 'HOME') {
+        policy.propertyAddress = normalizeText(document.getElementById('propertyAddressInput').value) || null;
+        policy.propertyType = normalizeText(document.getElementById('propertyTypeInput').value) || null;
+        const pv = document.getElementById('propertyValueInput').value;
+        policy.propertyValue = pv ? parseFloat(pv) : null;
+    }
+    if (policyType === 'PET') {
+        policy.petName = normalizeText(document.getElementById('petNameInput').value) || null;
+        policy.petSpecies = normalizeText(document.getElementById('petSpeciesInput').value) || null;
+        policy.petBreed = normalizeText(document.getElementById('petBreedInput').value) || null;
+        const pa = document.getElementById('petAgeInput').value;
+        policy.petAge = pa ? parseInt(pa) : null;
+    }
+    if (policyType === 'LONG_TERM_INJURY') {
+        const mb = document.getElementById('monthlyBenefitInput').value;
+        policy.monthlyBenefit = mb ? parseFloat(mb) : null;
+        const wp = document.getElementById('waitingPeriodInput').value;
+        policy.waitingPeriodDays = wp ? parseInt(wp) : null;
+        const bm = document.getElementById('maxBenefitMonthsInput').value;
+        policy.maxBenefitPeriodMonths = bm ? parseInt(bm) : null;
+    }
+
+    if (!currentEditId && policy.policyId && entityExistsInCache('policies', policy.policyId)) {
+        showModalError('policyModalError', 'An insurance policy with this ID already exists.');
+        return;
+    }
+
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/insurance-policies/${currentEditId}` : '/api/insurance-policies';
+    setSaveButtonState('savePolicyBtn', true);
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(policy)
+    })
+    .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            throw new Error(extractApiErrorMessage(data, `Save failed (${r.status})`));
+        }
+        return data;
+    })
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('policyModal')).hide();
+        if (!applyOptimisticEntitySave('policies', data, Boolean(currentEditId))) {
+            refreshDataTables();
+        }
+        showToast(currentEditId ? 'Insurance policy updated successfully.' : 'Insurance policy created successfully.');
+    })
+    .catch(e => showModalError('policyModalError', e.message))
+    .finally(() => setSaveButtonState('savePolicyBtn', false));
 }
 </script>
 </body>
