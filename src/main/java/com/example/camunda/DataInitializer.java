@@ -7,12 +7,17 @@ import com.example.camunda.model.Customer;
 import com.example.camunda.model.CustomerAccount;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
+import com.example.camunda.model.InsurancePolicy;
+import com.example.camunda.model.PolicyHolderType;
+import com.example.camunda.model.PolicyStatus;
+import com.example.camunda.model.PolicyType;
 import com.example.camunda.model.TrustLevel;
 import com.example.camunda.repository.AccountRepository;
 import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.CustomerAccountRepository;
 import com.example.camunda.repository.EmployeeRepository;
 import com.example.camunda.repository.ExternalCompanyRepository;
+import com.example.camunda.repository.InsurancePolicyRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -80,12 +85,14 @@ public class DataInitializer {
                                ExternalCompanyRepository companyRepo,
                                AccountRepository accountRepo,
                                CustomerAccountRepository customerAccountRepo,
+                               InsurancePolicyRepository insurancePolicyRepo,
                                @Value("${app.seed.reset-on-startup:false}") boolean resetOnStartup) {
         return args -> {
             backfillCustomerTrustLevels(customerRepo);
             backfillCustomerEmails(customerRepo);
 
             if (resetOnStartup) {
+                insurancePolicyRepo.deleteAll();
                 customerAccountRepo.deleteAll();
                 accountRepo.deleteAll();
                 customerRepo.deleteAll();
@@ -101,8 +108,12 @@ public class DataInitializer {
                     ? seedCustomers(customerRepo, employees)
                     : customerRepo.findAll();
 
+            List<ExternalCompany> companies;
             if (companyRepo.count() == 0) {
                 seedExternalCompanies(companyRepo);
+                companies = companyRepo.findAll();
+            } else {
+                companies = companyRepo.findAll();
             }
 
             // Always seed accounts/links when missing, even if employees/customers were seeded elsewhere.
@@ -110,6 +121,10 @@ public class DataInitializer {
                 customerAccountRepo.deleteAll();
                 accountRepo.deleteAll();
                 seedAccountsAndLinks(accountRepo, customerAccountRepo, customers);
+            }
+
+            if (insurancePolicyRepo.count() == 0) {
+                seedInsurancePolicies(insurancePolicyRepo, customers, companies);
             }
         };
     }
@@ -403,6 +418,147 @@ public class DataInitializer {
     }
 
     private record CityCountry(String city, String country) {
+    }
+
+    private void seedInsurancePolicies(InsurancePolicyRepository policyRepo,
+                                        List<Customer> customers,
+                                        List<ExternalCompany> companies) {
+        List<InsurancePolicy> policies = new ArrayList<>();
+
+        // --- Hardcoded anchor policies ---
+        policies.add(createCarPolicy(1L, customers.get(0).getCustomerId(), LocalDate.of(2023, 3, 1), LocalDate.of(2024, 2, 29), "195.00", "15000.00", "162-ND-2023", "Toyota", "Corolla", 2019));
+        policies.add(createHomePolicy(2L, customers.get(1).getCustomerId(), LocalDate.of(2022, 6, 15), LocalDate.of(2025, 6, 14), "420.00", "350000.00", "77 River Lane, Cork, Ireland", "House", "350000.00"));
+        policies.add(createPetPolicy(3L, customers.get(2).getCustomerId(), LocalDate.of(2024, 1, 10), null, "55.00", "5000.00", "Max", "Dog", "Labrador", 4));
+        policies.add(createLtiPolicy(4L, customers.get(3).getCustomerId(), LocalDate.of(2021, 9, 1), LocalDate.of(2031, 8, 31), "310.00", "250000.00", "2500.00", 90, 60));
+        // Company-held policies
+        policies.add(createCarPolicy(5L, null, LocalDate.of(2023, 7, 1), LocalDate.of(2024, 6, 30), "650.00", "45000.00", "151-GX-2022", "Mercedes", "Sprinter", 2022));
+        policies.get(4).setHolderType(PolicyHolderType.EXTERNAL_COMPANY);
+        policies.get(4).setCompanyId(companies.get(0).getCompanyId());
+        policies.get(4).setCustomerId(null);
+
+        policies.add(createHomePolicy(6L, null, LocalDate.of(2020, 1, 1), LocalDate.of(2025, 12, 31), "980.00", "1200000.00", "1 Main St, Metropolis", "Commercial", "1200000.00"));
+        policies.get(5).setHolderType(PolicyHolderType.EXTERNAL_COMPANY);
+        policies.get(5).setCompanyId(companies.get(1).getCompanyId());
+        policies.get(5).setCustomerId(null);
+
+        // --- Generated policies ---
+        PolicyType[] types = PolicyType.values();
+        PolicyStatus[] statuses = { PolicyStatus.ACTIVE, PolicyStatus.ACTIVE, PolicyStatus.ACTIVE, PolicyStatus.EXPIRED, PolicyStatus.CANCELLED };
+        String[] carMakes  = { "Toyota", "Ford", "BMW", "Honda", "Volkswagen", "Renault", "Peugeot", "Hyundai", "Nissan", "Audi" };
+        String[] carModels = { "Corolla", "Focus", "3 Series", "Civic", "Golf", "Clio", "208", "i30", "Qashqai", "A4" };
+        String[] petNames    = { "Buddy", "Luna", "Max", "Bella", "Charlie", "Lucy", "Cooper", "Daisy", "Rocky", "Molly" };
+        String[] petSpecies  = { "Dog", "Cat", "Dog", "Cat", "Dog", "Cat", "Dog", "Dog", "Dog", "Cat" };
+        String[] petBreeds   = { "Labrador", "Persian", "Beagle", "Siamese", "Spaniel", "Maine Coon", "Poodle", "Golden Retriever", "Boxer", "Ragdoll" };
+        String[] propTypes   = { "House", "Apartment", "Bungalow", "Duplex", "Studio" };
+
+        for (int i = 0; i < 44; i++) {
+            long id = 100L + i;
+            PolicyType type = types[i % types.length];
+            PolicyStatus status = statuses[i % statuses.length];
+            boolean useCompany = i % 5 == 4;
+
+            LocalDate start = LocalDate.of(2020 + (i % 5), (i % 12) + 1, (i % 27) + 1);
+            LocalDate end   = i % 7 == 0 ? null : start.plusYears(1);
+
+            String premium  = String.valueOf(80 + (i * 17) % 900);
+            String coverage = String.valueOf(10000 + (i * 3750) % 500000);
+
+            InsurancePolicy policy = switch (type) {
+                case CAR -> createCarPolicy(id, useCompany ? null : customers.get(i % customers.size()).getCustomerId(),
+                        start, end, premium, coverage,
+                        String.format("%03d-XX-%d", (i % 900) + 100, 2015 + (i % 10)),
+                        carMakes[i % carMakes.length], carModels[i % carModels.length],
+                        2015 + (i % 10));
+                case HOME -> createHomePolicy(id, useCompany ? null : customers.get(i % customers.size()).getCustomerId(),
+                        start, end, premium, coverage,
+                        buildDiverseAddress(10 + i, i, GLOBAL_LOCATIONS[i % GLOBAL_LOCATIONS.length]),
+                        propTypes[i % propTypes.length],
+                        String.valueOf(150000 + (i * 12500) % 800000));
+                case PET -> createPetPolicy(id, useCompany ? null : customers.get(i % customers.size()).getCustomerId(),
+                        start, end, premium, coverage,
+                        petNames[i % petNames.length], petSpecies[i % petSpecies.length],
+                        petBreeds[i % petBreeds.length], 1 + (i % 14));
+                case LONG_TERM_INJURY -> createLtiPolicy(id,
+                        useCompany ? null : customers.get(i % customers.size()).getCustomerId(),
+                        start, end, premium, coverage,
+                        String.valueOf(1000 + (i * 250) % 4000), 30 + (i % 4) * 30, 24 + (i % 4) * 12);
+            };
+
+            policy.setStatus(status);
+
+            if (useCompany) {
+                policy.setHolderType(PolicyHolderType.EXTERNAL_COMPANY);
+                policy.setCompanyId(companies.get(i % companies.size()).getCompanyId());
+                policy.setCustomerId(null);
+            }
+
+            policies.add(policy);
+        }
+
+        policyRepo.saveAll(policies);
+    }
+
+    private InsurancePolicy createCarPolicy(Long id, Long customerId,
+                                             LocalDate start, LocalDate end,
+                                             String premium, String coverage,
+                                             String reg, String make, String model, int year) {
+        InsurancePolicy p = basePolicy(id, customerId, PolicyType.CAR, start, end, premium, coverage);
+        p.setVehicleRegistration(reg);
+        p.setVehicleMake(make);
+        p.setVehicleModel(model);
+        p.setVehicleYear(year);
+        return p;
+    }
+
+    private InsurancePolicy createHomePolicy(Long id, Long customerId,
+                                              LocalDate start, LocalDate end,
+                                              String premium, String coverage,
+                                              String address, String propertyType, String value) {
+        InsurancePolicy p = basePolicy(id, customerId, PolicyType.HOME, start, end, premium, coverage);
+        p.setPropertyAddress(address);
+        p.setPropertyType(propertyType);
+        p.setPropertyValue(new java.math.BigDecimal(value));
+        return p;
+    }
+
+    private InsurancePolicy createPetPolicy(Long id, Long customerId,
+                                             LocalDate start, LocalDate end,
+                                             String premium, String coverage,
+                                             String name, String species, String breed, int age) {
+        InsurancePolicy p = basePolicy(id, customerId, PolicyType.PET, start, end, premium, coverage);
+        p.setPetName(name);
+        p.setPetSpecies(species);
+        p.setPetBreed(breed);
+        p.setPetAge(age);
+        return p;
+    }
+
+    private InsurancePolicy createLtiPolicy(Long id, Long customerId,
+                                             LocalDate start, LocalDate end,
+                                             String premium, String coverage,
+                                             String monthlyBenefit, int waitDays, int maxMonths) {
+        InsurancePolicy p = basePolicy(id, customerId, PolicyType.LONG_TERM_INJURY, start, end, premium, coverage);
+        p.setMonthlyBenefit(new java.math.BigDecimal(monthlyBenefit));
+        p.setWaitingPeriodDays(waitDays);
+        p.setMaxBenefitPeriodMonths(maxMonths);
+        return p;
+    }
+
+    private InsurancePolicy basePolicy(Long id, Long customerId, PolicyType type,
+                                        LocalDate start, LocalDate end,
+                                        String premium, String coverage) {
+        InsurancePolicy p = new InsurancePolicy();
+        p.setPolicyId(id);
+        p.setPolicyNumber(String.format("POL-%06d", id));
+        p.setPolicyType(type);
+        p.setStatus(PolicyStatus.ACTIVE);
+        p.setHolderType(PolicyHolderType.CUSTOMER);
+        p.setCustomerId(customerId);
+        p.setStartDate(start);
+        p.setEndDate(end);
+        p.setPremiumAmount(new java.math.BigDecimal(premium));
+        p.setCoverageAmount(new java.math.BigDecimal(coverage));
+        return p;
     }
 
     private ExternalCompany createCompany(Long id, String name, String address, String contactPerson, String phone) {

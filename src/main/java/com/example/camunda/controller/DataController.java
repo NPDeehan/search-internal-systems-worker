@@ -4,6 +4,7 @@ import com.example.camunda.dto.JobHistoryDTO;
 import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
+import com.example.camunda.model.InsurancePolicy;
 import com.example.camunda.model.JobHistory;
 import com.example.camunda.model.Account;
 import com.example.camunda.model.AccountRole;
@@ -12,6 +13,7 @@ import com.example.camunda.service.CustomerService;
 import com.example.camunda.service.EmployeeService;
 import com.example.camunda.service.CompanyService;
 import com.example.camunda.service.CustomerAccountLinkService;
+import com.example.camunda.service.InsurancePolicyService;
 import com.example.camunda.service.JobHistoryService;
 import com.example.camunda.service.ZeebeConnectionService;
 import com.example.camunda.service.AccountService;
@@ -46,6 +48,7 @@ public class DataController {
     private final CompanyService companyService;
     private final AccountService accountService;
     private final CustomerAccountLinkService customerAccountLinkService;
+    private final InsurancePolicyService insurancePolicyService;
     private final JobHistoryService jobHistoryService;
     private final ZeebeConnectionService zeebeConnectionService;
     private final ZeebeJobPollingService pollingService;
@@ -55,6 +58,7 @@ public class DataController {
                          CompanyService companyService,
                          AccountService accountService,
                          CustomerAccountLinkService customerAccountLinkService,
+                         InsurancePolicyService insurancePolicyService,
                          JobHistoryService jobHistoryService,
                          ZeebeConnectionService zeebeConnectionService,
                          ZeebeJobPollingService pollingService) {
@@ -63,6 +67,7 @@ public class DataController {
         this.companyService = companyService;
         this.accountService = accountService;
         this.customerAccountLinkService = customerAccountLinkService;
+        this.insurancePolicyService = insurancePolicyService;
         this.jobHistoryService = jobHistoryService;
         this.zeebeConnectionService = zeebeConnectionService;
         this.pollingService = pollingService;
@@ -223,7 +228,8 @@ public class DataController {
         status.put("manage-employee-record", workerStatus);
         status.put("manage-company-record", workerStatus);
         status.put("manage-customer-account-link", workerStatus);
-        
+        status.put("manage-insurance-policy", workerStatus);
+
         return status;
     }
 
@@ -338,6 +344,41 @@ public class DataController {
         accountService.deleteAccount(id);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Account deleted successfully");
+        return response;
+    }
+
+    // CRUD Operations for Insurance Policies
+    @GetMapping("/insurance-policies")
+    public List<InsurancePolicy> getInsurancePolicies() {
+        log.debug("Fetching all insurance policies");
+        return insurancePolicyService.getAllPolicies();
+    }
+
+    @GetMapping("/insurance-policies/{id}")
+    public InsurancePolicy getInsurancePolicyById(@PathVariable Long id) {
+        log.debug("Fetching insurance policy with ID: {}", id);
+        return insurancePolicyService.getPolicyById(id);
+    }
+
+    @PostMapping("/insurance-policies")
+    public InsurancePolicy createInsurancePolicy(@Valid @RequestBody InsurancePolicy policy) {
+        log.info("Creating new insurance policy of type: {}", policy.getPolicyType());
+        return insurancePolicyService.savePolicy(policy);
+    }
+
+    @PutMapping("/insurance-policies/{id}")
+    public InsurancePolicy updateInsurancePolicy(@PathVariable Long id, @Valid @RequestBody InsurancePolicy policy) {
+        log.info("Updating insurance policy with ID: {}", id);
+        policy.setPolicyId(id);
+        return insurancePolicyService.savePolicy(policy);
+    }
+
+    @DeleteMapping("/insurance-policies/{id}")
+    public Map<String, String> deleteInsurancePolicy(@PathVariable Long id) {
+        log.info("Deleting insurance policy with ID: {}", id);
+        insurancePolicyService.deletePolicy(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Insurance policy deleted successfully");
         return response;
     }
 
