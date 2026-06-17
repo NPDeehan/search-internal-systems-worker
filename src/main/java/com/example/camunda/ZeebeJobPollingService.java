@@ -4,6 +4,7 @@ import com.example.camunda.service.JobHistoryService;
 import com.example.camunda.service.ZeebeConnectionService;
 import com.example.camunda.worker.MatchCustomerWithDriWorker;
 import com.example.camunda.worker.QueryForCompanyWorker;
+import com.example.camunda.worker.QueryForCustomerWorker;
 import com.example.camunda.worker.EmployeeSearchWorker;
 import com.example.camunda.worker.AccountSearchWorker;
 import com.example.camunda.worker.AccountCrudWorker;
@@ -12,6 +13,10 @@ import com.example.camunda.worker.CustomerCrudWorker;
 import com.example.camunda.worker.CustomerAccountLinkWorker;
 import com.example.camunda.worker.EmployeeCrudWorker;
 import com.example.camunda.worker.InsurancePolicyCrudWorker;
+import com.example.camunda.worker.PackageCrudWorker;
+import com.example.camunda.worker.ProductCrudWorker;
+import com.example.camunda.worker.PurchaseOrderCrudWorker;
+import com.example.camunda.worker.PurchaseItemCrudWorker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
@@ -36,6 +41,7 @@ public class ZeebeJobPollingService {
     private final ZeebeConnectionService zeebeConnectionService;
     private final MatchCustomerWithDriWorker matchWorker;
     private final QueryForCompanyWorker companyWorker;
+    private final QueryForCustomerWorker customerSearchWorker;
     private final EmployeeSearchWorker employeeSearchWorker;
     private final AccountSearchWorker accountSearchWorker;
     private final AccountCrudWorker accountCrudWorker;
@@ -44,6 +50,10 @@ public class ZeebeJobPollingService {
     private final CompanyCrudWorker companyCrudWorker;
     private final CustomerAccountLinkWorker customerAccountLinkWorker;
     private final InsurancePolicyCrudWorker insurancePolicyCrudWorker;
+    private final PackageCrudWorker packageCrudWorker;
+    private final ProductCrudWorker productCrudWorker;
+    private final PurchaseOrderCrudWorker purchaseOrderCrudWorker;
+    private final PurchaseItemCrudWorker purchaseItemCrudWorker;
     private final JobHistoryService jobHistoryService;
     
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -51,6 +61,7 @@ public class ZeebeJobPollingService {
     public ZeebeJobPollingService(ZeebeConnectionService zeebeConnectionService,
                                   MatchCustomerWithDriWorker matchWorker,
                                   QueryForCompanyWorker companyWorker,
+                                  QueryForCustomerWorker customerSearchWorker,
                                   EmployeeSearchWorker employeeSearchWorker,
                                   AccountSearchWorker accountSearchWorker,
                                   AccountCrudWorker accountCrudWorker,
@@ -59,10 +70,15 @@ public class ZeebeJobPollingService {
                                   CompanyCrudWorker companyCrudWorker,
                                   CustomerAccountLinkWorker customerAccountLinkWorker,
                                   InsurancePolicyCrudWorker insurancePolicyCrudWorker,
+                                  PackageCrudWorker packageCrudWorker,
+                                  ProductCrudWorker productCrudWorker,
+                                  PurchaseOrderCrudWorker purchaseOrderCrudWorker,
+                                  PurchaseItemCrudWorker purchaseItemCrudWorker,
                                   JobHistoryService jobHistoryService) {
         this.zeebeConnectionService = zeebeConnectionService;
         this.matchWorker = matchWorker;
         this.companyWorker = companyWorker;
+        this.customerSearchWorker = customerSearchWorker;
         this.employeeSearchWorker = employeeSearchWorker;
         this.accountSearchWorker = accountSearchWorker;
         this.accountCrudWorker = accountCrudWorker;
@@ -71,6 +87,10 @@ public class ZeebeJobPollingService {
         this.companyCrudWorker = companyCrudWorker;
         this.customerAccountLinkWorker = customerAccountLinkWorker;
         this.insurancePolicyCrudWorker = insurancePolicyCrudWorker;
+        this.packageCrudWorker = packageCrudWorker;
+        this.productCrudWorker = productCrudWorker;
+        this.purchaseOrderCrudWorker = purchaseOrderCrudWorker;
+        this.purchaseItemCrudWorker = purchaseItemCrudWorker;
         this.jobHistoryService = jobHistoryService;
     }
 
@@ -99,6 +119,14 @@ public class ZeebeJobPollingService {
     public void pollCompanyJobs() {
         if (isRunning.get()) {
             pollJobs("query-for-company", companyWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollCustomerSearchJobs() {
+        if (isRunning.get()) {
+            pollJobs("query-for-customer", customerSearchWorker::handleJob);
         }
     }
 
@@ -163,6 +191,38 @@ public class ZeebeJobPollingService {
     public void pollInsurancePolicyCrudJobs() {
         if (isRunning.get()) {
             pollJobs("manage-insurance-policy", insurancePolicyCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollPackageCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-package", packageCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollProductCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-product", productCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollPurchaseOrderCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-purchase-order", purchaseOrderCrudWorker::handleJob);
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
+    @Async
+    public void pollPurchaseItemCrudJobs() {
+        if (isRunning.get()) {
+            pollJobs("manage-purchase-item", purchaseItemCrudWorker::handleJob);
         }
     }
 

@@ -33,7 +33,7 @@ Camunda 8 Connectors are pre-built integrations that allow you to connect your B
 
 ## 🔍 Implemented Connectors
 
-This project implements nine custom job workers with fuzzy matching and CRUD capabilities:
+This project implements fourteen custom job workers with fuzzy matching and CRUD capabilities:
 
 ### 1. **Match Customer with DRI** (`match-customer-with-dri`)
 - **Purpose**: Match customers with their designated relationship individuals (DRIs)
@@ -89,6 +89,42 @@ This project implements nine custom job workers with fuzzy matching and CRUD cap
 - **Features**: Upsert semantics for relationship roles (`OWNER`, `ADMIN`, `NAMED`)
 - **Returns**: Operation status + consolidated `customerAccountLinkResult`
 
+### 10. **Manage Insurance Policy** (`manage-insurance-policy`)
+- **Purpose**: Create, update, delete, or query insurance policies held by customers or external companies
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`, `QUERY`
+- **Policy Types**: `LONG_TERM_INJURY`, `HOME`, `CAR`, `PET`
+- **Holder Types**: `CUSTOMER`, `EXTERNAL_COMPANY`
+- **Features**: Type-specific fields appear per policy type (CAR: vehicle registration/make/model/year; HOME: property address/type/value; PET: name/species/breed/age; LONG_TERM_INJURY: monthly benefit/waiting period/max benefit period); policy ID auto-generated on CREATE when omitted; defaults to `ACTIVE` status
+- **Returns**: Operation status + consolidated `policyCrudResult`
+
+### 11. **Manage Package** (`manage-package`)
+- **Purpose**: Create, update, delete, or query logistics packages
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`, `QUERY`
+- **Service Levels**: `ECONOMY`, `STANDARD`, `EXPRESS`, `OVERNIGHT`
+- **Status Values**: `CREATED`, `SHIPPED`, `IN_TRANSIT`, `DELIVERED`, `RETURNED`
+- **Features**: Tracks sender/recipient, origin/destination addresses, weight, shipping cost, and delivery dates; package ID auto-generated on CREATE when omitted; defaults to `CREATED` status
+- **Returns**: Operation status + consolidated `packageCrudResult` (includes `trackingNumber`)
+
+### 12. **Manage Product** (`manage-product`)
+- **Purpose**: Create, update, delete, or query sellable products in the catalog
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`, `QUERY`
+- **Features**: Tracks SKU, category, manufacturer, RRP, unit cost, stock quantity, and tier; `margin` is computed automatically as `rrp - unitCost`; product ID auto-generated on CREATE when omitted
+- **Returns**: Operation status + consolidated `productCrudResult` (includes `sku`)
+
+### 13. **Manage Purchase Order** (`manage-purchase-order`)
+- **Purpose**: Create, update, delete, or query purchase order headers
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`, `QUERY`
+- **Status Values**: `DRAFT`, `SUBMITTED`, `APPROVED`, `SHIPPED`, `DELIVERED`, `CANCELLED`
+- **Features**: Tracks customer, order date, expected delivery date, and notes; order total is computed automatically from its line items; order ID auto-generated on CREATE when omitted; defaults to `DRAFT` status
+- **Returns**: Operation status + consolidated `orderCrudResult` (includes `orderNumber` and embedded items)
+- **Note**: Line items are managed separately using `manage-purchase-item`
+
+### 14. **Manage Purchase Item** (`manage-purchase-item`)
+- **Purpose**: Add, update, remove, or query a single line item on an existing purchase order
+- **Operation**: `CREATE`, `UPDATE`, `DELETE`, `QUERY`
+- **Features**: `unitPrice` and `productName` default from the product catalog when omitted; `lineTotal` is computed as `quantity × unitPrice`; the parent order's `totalAmount` is recomputed automatically after every change; QUERY accepts either `purchaseItemId` (single item) or `orderId` (all items on an order)
+- **Returns**: Operation status + consolidated `itemCrudResult`
+
 ### 🧾 **Worker Reference (at a glance)**
 
 | Job Type | Worker Class | Primary Output Variable | Status Field |
@@ -102,6 +138,11 @@ This project implements nine custom job workers with fuzzy matching and CRUD cap
 | `manage-company-record` | `CompanyCrudWorker` | `companyCrudResult` | `operationStatus` |
 | `manage-account-record` | `AccountCrudWorker` | `accountCrudResult` | `operationStatus` |
 | `manage-customer-account-link` | `CustomerAccountLinkWorker` | `customerAccountLinkResult` | `operationStatus` |
+| `manage-insurance-policy` | `InsurancePolicyCrudWorker` | `policyCrudResult` | `operationStatus` |
+| `manage-package` | `PackageCrudWorker` | `packageCrudResult` | `operationStatus` |
+| `manage-product` | `ProductCrudWorker` | `productCrudResult` | `operationStatus` |
+| `manage-purchase-order` | `PurchaseOrderCrudWorker` | `orderCrudResult` | `operationStatus` |
+| `manage-purchase-item` | `PurchaseItemCrudWorker` | `itemCrudResult` | `operationStatus` |
 
 ### 🧠 **Fuzzy Matching Features**
 All connectors support advanced fuzzy matching using:
@@ -362,11 +403,16 @@ For every new worker, update **all** of the following areas:
   - "Search Employee"
   - "Query for Company"
    - "Search Account"
-   - "Manage Customer Record"
-   - "Manage Employee Record"
-   - "Manage Company Record"
-   - "Manage Account Record"
-   - "Manage Customer Account Link"
+  - "Manage Customer Record"
+  - "Manage Employee Record"
+  - "Manage Company Record"
+  - "Manage Account Record"
+  - "Manage Customer Account Link"
+  - "Manage Insurance Policy"
+  - "Manage Package"
+  - "Manage Product"
+  - "Manage Purchase Order"
+  - "Manage Purchase Item"
 - Fill in search parameters using static values or FEEL expressions
 
 ### 3. Configure Output Variables
@@ -380,6 +426,11 @@ Each connector now uses a single consolidated output variable:
 - **Company CRUD**: `companyCrudResult`
 - **Account CRUD**: `accountCrudResult`
 - **Customer-Account Link CRUD**: `customerAccountLinkResult`
+- **Insurance Policy CRUD**: `policyCrudResult`
+- **Package CRUD**: `packageCrudResult`
+- **Product CRUD**: `productCrudResult`
+- **Purchase Order CRUD**: `orderCrudResult`
+- **Purchase Item CRUD**: `itemCrudResult`
 
 ### 4. Deploy and Execute
 - Deploy your process to Camunda 8

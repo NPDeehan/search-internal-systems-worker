@@ -10,6 +10,10 @@
         body { background: #f8fafc; }
         .sticky-top { z-index: 1030; }
         .nav-tabs .nav-link.active { background: #e9ecef; border-bottom: 2px solid #0d6efd; }
+        #dataTableTabs.nav { --bs-nav-link-padding-x: 0; --bs-nav-link-padding-y: 0; }
+        .entity-card { cursor: pointer; transition: transform .08s ease, box-shadow .12s ease; border: 2px solid transparent !important; }
+        .entity-card:hover { transform: translateY(-2px); box-shadow: 0 .35rem .9rem rgba(0,0,0,.12) !important; }
+        .entity-card.active { border-color: #0d6efd !important; box-shadow: 0 .35rem .9rem rgba(13,110,253,.25) !important; }
         .summary-card { min-width: 180px; }
         .summary-icon { font-size: 2rem; margin-right: 0.5rem; }
         .status-badge { font-size: 1rem; }
@@ -85,6 +89,116 @@
         .worker-badge {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
+        }
+
+        /* Event Publisher */
+        .event-composer { border: 0; }
+        .event-composer .card-header {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem 1.5rem;
+        }
+        .event-composer .card-body { padding: 1.25rem 1.5rem; }
+        .event-composer .card-footer {
+            background: #f8fafc;
+            border-top: 1px solid #e9ecef;
+            padding: 0.85rem 1.5rem;
+        }
+        .event-section-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 0 0 0.5rem;
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.5rem;
+        }
+        .event-section-title .text-muted {
+            font-weight: 400;
+            font-size: 0.8rem;
+        }
+        .event-type-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.2rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+        }
+        .event-type-pill.event-type-message { background: #e0ecff; color: #1e40af; }
+        .event-type-pill.event-type-signal  { background: #ede9fe; color: #6d28d9; }
+        .event-payload-editor {
+            font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+            font-size: 0.9rem;
+            min-height: 220px;
+            line-height: 1.55;
+            border-radius: 8px;
+            border-color: #d1d5db;
+            background: #fafbfc;
+        }
+        .event-payload-editor:focus {
+            background: #fff;
+            box-shadow: 0 0 0 0.2rem rgba(13,110,253,.15);
+        }
+        .event-validity {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #475569;
+            transition: background-color .15s, color .15s;
+            max-width: 22rem;
+        }
+        .event-validity.is-valid   { background: #dcfce7; color: #166534; }
+        .event-validity.is-invalid { background: #fee2e2; color: #991b1b; }
+        .event-validity .event-validity-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .event-send-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .event-send-bar .btn-send {
+            padding: 0.55rem 1.5rem;
+            font-weight: 600;
+            box-shadow: 0 1px 2px rgba(13, 110, 253, 0.2);
+        }
+        .event-kbd-hint {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        .event-side-card { border: 0; }
+        .event-side-card .card-body { padding: 1.1rem 1.25rem; }
+        .event-side-card h6 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        #event-publish-result {
+            border-radius: 8px;
+            font-size: 0.875rem;
+            padding: 0.65rem 1rem;
+            margin: 0;
+        }
+        .event-replay-btn {
+            padding: 0.1rem 0.4rem;
+            font-size: 0.75rem;
+            line-height: 1.2;
         }
     </style>
 </head>
@@ -244,72 +358,119 @@
             </div>
         </div>
         <div class="tab-pane fade" id="events" role="tabpanel">
-            <div class="card shadow-sm mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0"><i class="fa-solid fa-bullhorn text-primary me-1"></i>Event Publisher</h5>
-                        <span id="event-connection-status" class="badge bg-secondary">Checking connection...</span>
-                    </div>
+            <div class="row g-3 mb-3">
+                <!-- Event composer -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm event-composer">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-bullhorn text-primary"></i>
+                                    <h5 class="mb-0">Event Publisher</h5>
+                                    <span id="event-type-pill" class="event-type-pill event-type-message">
+                                        <i class="fa-solid fa-envelope"></i><span>Message</span>
+                                    </span>
+                                </div>
+                                <span id="event-connection-status" class="badge bg-secondary">Checking connection...</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <!-- Event details -->
+                            <h6 class="event-section-title">Event details</h6>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label mb-1">Event Type</label>
+                                    <select id="event-type" class="form-select">
+                                        <option value="MESSAGE" selected>Message</option>
+                                        <option value="SIGNAL">Signal</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-9">
+                                    <label class="form-label mb-1">Event Name</label>
+                                    <input id="event-name" class="form-control" placeholder="e.g. CustomerVerified">
+                                </div>
+                            </div>
+                            <div id="event-message-advanced-row" class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label mb-1">Correlation Key <span class="text-danger">*</span></label>
+                                    <input id="event-correlation-key" class="form-control" placeholder="Identifies the process instance">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label mb-1">Message ID <span class="text-muted fw-normal small">(optional — dedupe)</span></label>
+                                    <input id="event-message-id" class="form-control" placeholder="Leave blank to allow duplicates">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label mb-1">Time to Live <span class="text-muted fw-normal small">(optional)</span></label>
+                                    <div class="input-group">
+                                        <input id="event-ttl-ms" type="number" min="1" class="form-control" placeholder="5000">
+                                        <span class="input-group-text">ms</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-3">
-                            <select id="event-type" class="form-select">
-                                <option value="MESSAGE" selected>Message</option>
-                                <option value="SIGNAL">Signal</option>
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <input id="event-name" class="form-control" placeholder="Event name (e.g. CustomerVerified)">
-                        </div>
-                        <div class="col-md-4">
-                            <input id="event-correlation-key" class="form-control" placeholder="Correlation key (required for messages)">
-                        </div>
-                    </div>
+                            <hr class="my-4">
 
-                    <div class="row g-2 mb-3" id="event-message-advanced-row">
-                        <div class="col-md-4">
-                            <input id="event-message-id" class="form-control" placeholder="Message ID (optional)">
-                        </div>
-                        <div class="col-md-4">
-                            <input id="event-ttl-ms" type="number" min="1" class="form-control" placeholder="TTL ms (optional)">
-                        </div>
-                        <div class="col-md-4 d-flex gap-2">
-                            <button id="event-validate-btn" type="button" class="btn btn-outline-secondary flex-fill">Validate JSON</button>
-                            <button id="event-pretty-btn" type="button" class="btn btn-outline-secondary flex-fill">Pretty JSON</button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="event-payload" class="form-label">Payload (JSON object)</label>
-                        <textarea id="event-payload" class="form-control" rows="8">{
+                            <!-- Payload -->
+                            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                                <h6 class="event-section-title mb-0">
+                                    Payload <span class="text-muted">JSON object</span>
+                                </h6>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span id="event-validity" class="event-validity" title="">
+                                        <i class="fa-regular fa-circle"></i><span class="event-validity-text">not checked</span>
+                                    </span>
+                                    <div class="btn-group btn-group-sm">
+                                        <button id="event-pretty-btn" type="button" class="btn btn-outline-secondary">
+                                            <i class="fa-solid fa-align-left me-1"></i>Format
+                                        </button>
+                                        <button id="event-validate-btn" type="button" class="btn btn-outline-secondary">
+                                            <i class="fa-solid fa-circle-check me-1"></i>Validate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <textarea id="event-payload" class="form-control event-payload-editor" rows="10" spellcheck="false">{
   "source": "dashboard"
 }</textarea>
-                    </div>
+                            <div class="event-kbd-hint mt-2">
+                                <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to send
+                            </div>
 
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-4">
-                            <input id="event-preset-name" class="form-control" placeholder="Preset name">
+                            <div id="event-publish-result" class="alert d-none mt-3"></div>
                         </div>
-                        <div class="col-md-4">
-                            <select id="event-preset-select" class="form-select">
-                                <option value="">Select preset...</option>
+                        <div class="card-footer event-send-bar">
+                            <button id="event-send-btn" type="button" class="btn btn-primary btn-send">
+                                <i class="fa-solid fa-paper-plane me-2"></i>Send Event
+                            </button>
+                            <small class="text-muted">Sends to the currently connected Camunda cluster.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar: Presets -->
+                <div class="col-lg-4">
+                    <div class="card shadow-sm event-side-card">
+                        <div class="card-body">
+                            <h6><i class="fa-solid fa-bookmark text-primary"></i>Presets</h6>
+                            <p class="text-muted small mb-3">Save the current form and payload to reuse later.</p>
+
+                            <label class="form-label mb-1">Load a preset</label>
+                            <select id="event-preset-select" class="form-select mb-3">
+                                <option value="">Select preset to load...</option>
                             </select>
-                        </div>
-                        <div class="col-md-4 d-flex gap-2">
-                            <button id="event-save-preset-btn" type="button" class="btn btn-outline-primary flex-fill">Save Preset</button>
-                            <button id="event-load-preset-btn" type="button" class="btn btn-outline-secondary flex-fill">Load</button>
-                            <button id="event-delete-preset-btn" type="button" class="btn btn-outline-danger flex-fill">Delete</button>
+
+                            <label class="form-label mb-1">Save current as preset</label>
+                            <div class="input-group">
+                                <input id="event-preset-name" class="form-control" placeholder="Preset name">
+                                <button id="event-save-preset-btn" type="button" class="btn btn-outline-primary" title="Save preset">
+                                    <i class="fa-solid fa-floppy-disk"></i>
+                                </button>
+                                <button id="event-delete-preset-btn" type="button" class="btn btn-outline-danger" title="Delete selected preset">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="d-flex gap-2 align-items-center">
-                        <button id="event-send-btn" type="button" class="btn btn-primary">
-                            <i class="fa-solid fa-paper-plane me-1"></i>Send Event
-                        </button>
-                        <small class="text-muted">Sends to the currently connected Camunda cluster.</small>
-                    </div>
-
-                    <div id="event-publish-result" class="alert d-none mt-3 mb-0"></div>
                 </div>
             </div>
 
@@ -317,11 +478,19 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h6 class="mb-0"><i class="fa-solid fa-clock-rotate-left text-secondary me-1"></i>Dispatch History</h6>
-                        <button id="event-history-clear-btn" type="button" class="btn btn-outline-secondary btn-sm">Clear</button>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="btn-group btn-group-sm" id="event-history-type-filter">
+                                <button type="button" class="btn btn-outline-secondary active" data-filter="current">Current type</button>
+                                <button type="button" class="btn btn-outline-secondary" data-filter="all">All types</button>
+                            </div>
+                            <button id="event-history-clear-btn" type="button" class="btn btn-outline-danger btn-sm">
+                                <i class="fa-solid fa-trash me-1"></i>Clear
+                            </button>
+                        </div>
                     </div>
                     <div class="table-responsive">
-                        <table class="table table-sm table-striped mb-0">
-                            <thead>
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
                             <tr>
                                 <th>Time</th>
                                 <th>Type</th>
@@ -329,10 +498,11 @@
                                 <th>Correlation</th>
                                 <th>Status</th>
                                 <th>Details</th>
+                                <th></th>
                             </tr>
                             </thead>
                             <tbody id="event-dispatch-history-body">
-                            <tr><td colspan="6" class="text-center text-muted py-3">No dispatches yet</td></tr>
+                            <tr><td colspan="7" class="text-center text-muted py-3">No dispatches yet</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -342,13 +512,20 @@
         <div class="tab-pane fade" id="datasource" role="tabpanel">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="fa-solid fa-database text-primary"></i> Data Source Overview</h5>
-                    <p class="text-muted mb-4">H2 In-Memory Database - Test data for worker operations</p>
+                    <div class="d-flex justify-content-between align-items-start mb-4">
+                        <div>
+                            <h5 class="card-title mb-0"><i class="fa-solid fa-database text-primary"></i> Data Source Overview</h5>
+                            <p class="text-muted small mb-0 mt-1">H2 In-Memory Database - Test data for worker operations</p>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm" onclick="refreshDataTables()" title="Refresh all datasets">
+                            <i class="fa-solid fa-arrows-rotate me-1"></i>Refresh all
+                        </button>
+                    </div>
                     
-                    <!-- Data Summary Cards -->
-                    <div class="row g-3 mb-4">
+                    <!-- Data Summary Cards (click a card to view its table) -->
+                    <div class="row g-3 mb-4 nav" id="dataTableTabs" role="tablist">
                         <div class="col-md-3">
-                            <div class="card bg-light border-0">
+                            <div class="card bg-light border-0 entity-card active" id="customers-data-tab" data-bs-toggle="pill" data-bs-target="#customers-data" role="tab" style="cursor:pointer">
                                 <div class="card-body text-center">
                                     <i class="fa-solid fa-users text-primary fs-2 mb-2"></i>
                                     <h6 class="card-title">Customers</h6>
@@ -358,7 +535,7 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-light border-0">
+                            <div class="card bg-light border-0 entity-card" id="employees-data-tab" data-bs-toggle="pill" data-bs-target="#employees-data" role="tab" style="cursor:pointer">
                                 <div class="card-body text-center">
                                     <i class="fa-solid fa-id-badge text-success fs-2 mb-2"></i>
                                     <h6 class="card-title">Employees</h6>
@@ -368,7 +545,7 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-light border-0">
+                            <div class="card bg-light border-0 entity-card" id="companies-data-tab" data-bs-toggle="pill" data-bs-target="#companies-data" role="tab" style="cursor:pointer">
                                 <div class="card-body text-center">
                                     <i class="fa-solid fa-building text-info fs-2 mb-2"></i>
                                     <h6 class="card-title">External Companies</h6>
@@ -378,7 +555,7 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-light border-0">
+                            <div class="card bg-light border-0 entity-card" id="accounts-data-tab" data-bs-toggle="pill" data-bs-target="#accounts-data" role="tab" style="cursor:pointer">
                                 <div class="card-body text-center">
                                     <i class="fa-solid fa-piggy-bank text-warning fs-2 mb-2"></i>
                                     <h6 class="card-title">Accounts</h6>
@@ -388,11 +565,51 @@
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="card bg-light border-0">
+                            <div class="card bg-light border-0 entity-card" id="links-data-tab" data-bs-toggle="pill" data-bs-target="#links-data" role="tab" style="cursor:pointer">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-link text-secondary fs-2 mb-2"></i>
+                                    <h6 class="card-title">Customer Accounts</h6>
+                                    <span id="links-count" class="fs-4 fw-bold text-secondary">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light border-0 entity-card" id="policies-data-tab" data-bs-toggle="pill" data-bs-target="#policies-data" role="tab" style="cursor:pointer">
                                 <div class="card-body text-center">
                                     <i class="fa-solid fa-shield-halved text-danger fs-2 mb-2"></i>
                                     <h6 class="card-title">Insurance Policies</h6>
                                     <span id="policies-count" class="fs-4 fw-bold text-danger">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light border-0 entity-card" id="packages-data-tab" data-bs-toggle="pill" data-bs-target="#packages-data" role="tab" style="cursor:pointer">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-truck text-dark fs-2 mb-2"></i>
+                                    <h6 class="card-title">Packages</h6>
+                                    <span id="packages-count" class="fs-4 fw-bold text-dark">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light border-0 entity-card" id="products-data-tab" data-bs-toggle="pill" data-bs-target="#products-data" role="tab" style="cursor:pointer">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-box-open text-primary fs-2 mb-2"></i>
+                                    <h6 class="card-title">Products</h6>
+                                    <span id="products-count" class="fs-4 fw-bold text-primary">...</span>
+                                    <div class="text-muted small">Records</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light border-0 entity-card" id="orders-data-tab" data-bs-toggle="pill" data-bs-target="#orders-data" role="tab" style="cursor:pointer">
+                                <div class="card-body text-center">
+                                    <i class="fa-solid fa-file-invoice-dollar text-success fs-2 mb-2"></i>
+                                    <h6 class="card-title">Purchase Orders</h6>
+                                    <span id="orders-count" class="fs-4 fw-bold text-success">...</span>
                                     <div class="text-muted small">Records</div>
                                 </div>
                             </div>
@@ -402,43 +619,10 @@
                     <!-- Data Tables with improved layout -->
                     <div class="row g-4">
                         <div class="col-12">
-                            <ul class="nav nav-pills justify-content-center mb-3" id="dataTableTabs" role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="customers-data-tab" data-bs-toggle="pill" data-bs-target="#customers-data" type="button" role="tab">
-                                        <i class="fa-solid fa-users me-1"></i>Customers
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="employees-data-tab" data-bs-toggle="pill" data-bs-target="#employees-data" type="button" role="tab">
-                                        <i class="fa-solid fa-id-badge me-1"></i>Employees
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="companies-data-tab" data-bs-toggle="pill" data-bs-target="#companies-data" type="button" role="tab">
-                                        <i class="fa-solid fa-building me-1"></i>External Companies
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="accounts-data-tab" data-bs-toggle="pill" data-bs-target="#accounts-data" type="button" role="tab">
-                                        <i class="fa-solid fa-piggy-bank me-1"></i>Accounts
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="links-data-tab" data-bs-toggle="pill" data-bs-target="#links-data" type="button" role="tab">
-                                        <i class="fa-solid fa-link me-1"></i>Customer Accounts
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="policies-data-tab" data-bs-toggle="pill" data-bs-target="#policies-data" type="button" role="tab">
-                                        <i class="fa-solid fa-shield-halved me-1"></i>Insurance Policies
-                                    </button>
-                                </li>
-                            </ul>
-
                             <div class="card border-0 shadow-sm mb-3">
                                 <div class="card-body py-2">
                                     <div class="row g-2 align-items-center">
-                                        <div class="col-md-6">
+                                        <div class="col-md-5">
                                             <div class="input-group input-group-sm">
                                                 <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
                                                 <input type="text" class="form-control" id="tableFilterInput" placeholder="Filter current table...">
@@ -449,8 +633,13 @@
                                                 <option value="">Sort by...</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-2 d-grid">
-                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="tableSortDirBtn" title="Toggle sort direction">↑ Asc</button>
+                                        <div class="col-md-2 d-flex gap-1">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm flex-fill" id="tableSortDirBtn" title="Toggle sort direction">↑ Asc</button>
+                                        </div>
+                                        <div class="col-md-1 d-grid">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshActiveTable()" title="Refresh this dataset">
+                                                <i class="fa-solid fa-arrows-rotate"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -541,6 +730,51 @@
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
                                                 <table class="table table-hover mb-0" id="policies-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="packages-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-truck me-2"></i>Package Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddPackageModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Package
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="packages-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="products-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-box-open me-2"></i>Product Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddProductModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Product
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="products-table"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="orders-data" role="tabpanel">
+                                    <div class="card border-0 shadow-sm">
+                                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Purchase Order Records</h6>
+                                            <button class="btn btn-light btn-sm" onclick="showAddOrderModal()">
+                                                <i class="fa-solid fa-plus me-1"></i>Add Purchase Order
+                                            </button>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover mb-0" id="orders-table"></table>
                                             </div>
                                         </div>
                                     </div>
@@ -677,6 +911,10 @@
                     <div class="mb-3">
                         <label for="companyPhoneInput" class="form-label">Phone Number</label>
                         <input type="text" class="form-control" id="companyPhoneInput">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="companySanctionedInput">
+                        <label class="form-check-label" for="companySanctionedInput">Under Sanction</label>
                     </div>
                 </form>
             </div>
@@ -917,6 +1155,271 @@
     </div>
 </div>
 
+<!-- Package Modal -->
+<div class="modal fade" id="packageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="packageModalTitle">Add Package</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="packageModalError" class="alert alert-danger d-none" role="alert"></div>
+                <form id="packageForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="packageIdInput" class="form-label">Package ID</label>
+                            <input type="number" class="form-control" id="packageIdInput">
+                            <div class="form-text">Auto-generated if left blank</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="trackingNumberInput" class="form-label">Tracking Number</label>
+                            <input type="text" class="form-control" id="trackingNumberInput" placeholder="e.g. PKG-000001">
+                            <div class="form-text">Auto-generated if left blank</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageStatusInput" class="form-label">Status *</label>
+                            <select class="form-select" id="packageStatusInput" required>
+                                <option value="CREATED">CREATED</option>
+                                <option value="IN_TRANSIT">IN_TRANSIT</option>
+                                <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+                                <option value="DELIVERED">DELIVERED</option>
+                                <option value="RETURNED">RETURNED</option>
+                                <option value="LOST">LOST</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageServiceLevelInput" class="form-label">Service Level *</label>
+                            <select class="form-select" id="packageServiceLevelInput" required>
+                                <option value="ECONOMY">ECONOMY</option>
+                                <option value="STANDARD">STANDARD</option>
+                                <option value="EXPRESS">EXPRESS</option>
+                                <option value="OVERNIGHT">OVERNIGHT</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageCustomerIdInput" class="form-label">Customer ID</label>
+                            <input type="number" class="form-control" id="packageCustomerIdInput">
+                            <div class="form-text">Optional shipper link</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageWeightInput" class="form-label">Weight (kg) *</label>
+                            <input type="number" class="form-control" id="packageWeightInput" step="0.001" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packageSenderInput" class="form-label">Sender Name *</label>
+                            <input type="text" class="form-control" id="packageSenderInput" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packageRecipientInput" class="form-label">Recipient Name *</label>
+                            <input type="text" class="form-control" id="packageRecipientInput" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packageOriginInput" class="form-label">Origin Address *</label>
+                            <input type="text" class="form-control" id="packageOriginInput" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="packageDestinationInput" class="form-label">Destination Address *</label>
+                            <input type="text" class="form-control" id="packageDestinationInput" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageShippedDateInput" class="form-label">Shipped Date</label>
+                            <input type="date" class="form-control" id="packageShippedDateInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageEstDeliveryInput" class="form-label">Est. Delivery Date</label>
+                            <input type="date" class="form-control" id="packageEstDeliveryInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageDeliveredDateInput" class="form-label">Delivered Date</label>
+                            <input type="date" class="form-control" id="packageDeliveredDateInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="packageShippingCostInput" class="form-label">Shipping Cost</label>
+                            <input type="number" class="form-control" id="packageShippingCostInput" step="0.01">
+                        </div>
+                        <div class="col-md-8">
+                            <label for="packageContentsInput" class="form-label">Contents</label>
+                            <input type="text" class="form-control" id="packageContentsInput">
+                        </div>
+                        <div class="col-12">
+                            <label for="packageNotesInput" class="form-label">Notes</label>
+                            <textarea class="form-control" id="packageNotesInput" rows="2"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="savePackageBtn" class="btn btn-dark" onclick="savePackage()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal fade" id="productModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="productModalTitle">Add Product</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="productModalError" class="alert alert-danger d-none" role="alert"></div>
+                <form id="productForm">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="productIdInput" class="form-label">Product ID</label>
+                            <input type="number" class="form-control" id="productIdInput">
+                            <div class="form-text">Auto-generated if left blank</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productSkuInput" class="form-label">SKU</label>
+                            <input type="text" class="form-control" id="productSkuInput" placeholder="e.g. PRD-000001">
+                            <div class="form-text">Auto-generated if left blank</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productNameInput" class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="productNameInput" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="productDescriptionInput" class="form-label">Description</label>
+                            <input type="text" class="form-control" id="productDescriptionInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productCategoryInput" class="form-label">Category</label>
+                            <input type="text" class="form-control" id="productCategoryInput" placeholder="e.g. Phones">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productManufacturerInput" class="form-label">Manufacturer</label>
+                            <input type="text" class="form-control" id="productManufacturerInput">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productTierInput" class="form-label">Tier</label>
+                            <input type="text" class="form-control" id="productTierInput" placeholder="e.g. premium">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productRrpInput" class="form-label">RRP *</label>
+                            <input type="number" class="form-control" id="productRrpInput" step="0.01" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productUnitCostInput" class="form-label">Unit Cost *</label>
+                            <input type="number" class="form-control" id="productUnitCostInput" step="0.01" required>
+                            <div class="form-text">Margin is computed automatically</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productStockQtyInput" class="form-label">Stock Quantity</label>
+                            <input type="number" class="form-control" id="productStockQtyInput" min="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="productInStockInput" class="form-label">In Stock</label>
+                            <select class="form-select" id="productInStockInput">
+                                <option value="">(auto from stock qty)</option>
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveProductBtn" class="btn btn-primary" onclick="saveProduct()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Order Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="orderModalTitle">Add Purchase Order</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="orderModalError" class="alert alert-danger d-none" role="alert"></div>
+                <form id="orderForm">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label for="orderIdInput" class="form-label">Order ID</label>
+                            <input type="number" class="form-control" id="orderIdInput">
+                            <div class="form-text">Auto-generated if blank</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderNumberInput" class="form-label">Order Number</label>
+                            <input type="text" class="form-control" id="orderNumberInput" placeholder="e.g. PO-000001">
+                            <div class="form-text">Auto-generated if blank</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderStatusInput" class="form-label">Status *</label>
+                            <select class="form-select" id="orderStatusInput" required>
+                                <option value="DRAFT">DRAFT</option>
+                                <option value="SUBMITTED">SUBMITTED</option>
+                                <option value="APPROVED">APPROVED</option>
+                                <option value="FULFILLED">FULFILLED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderCustomerIdInput" class="form-label">Customer ID</label>
+                            <input type="number" class="form-control" id="orderCustomerIdInput">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderDateInput" class="form-label">Order Date *</label>
+                            <input type="date" class="form-control" id="orderDateInput" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="orderExpectedDateInput" class="form-label">Expected Delivery</label>
+                            <input type="date" class="form-control" id="orderExpectedDateInput">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="orderNotesInput" class="form-label">Notes</label>
+                            <input type="text" class="form-control" id="orderNotesInput">
+                        </div>
+                    </div>
+
+                    <div class="mt-4 border-top pt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0"><i class="fa-solid fa-list me-1"></i>Line Items</h6>
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="addOrderLineRow()">
+                                <i class="fa-solid fa-plus me-1"></i>Add Line
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 45%">Item</th>
+                                        <th style="width: 15%">Quantity</th>
+                                        <th style="width: 18%">Unit Price</th>
+                                        <th style="width: 17%">Line Total</th>
+                                        <th style="width: 5%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderLinesBody"></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end fw-bold">Order Total</td>
+                                        <td class="fw-bold" id="orderTotalCell">0.00</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="saveOrderBtn" class="btn btn-success" onclick="saveOrder()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="toast-container position-fixed top-0 end-0 p-3" id="appToastContainer" style="z-index: 1080;"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -929,6 +1432,7 @@ const jobHistoryExpandedPrefKey = 'dashboard.jobHistory.expandedByDefault';
 let jobHistoryExpandedByDefault = false;
 let eventPresetsCache = [];
 let eventDispatchHistory = [];
+let eventHistoryShowAll = false;
 function renderStatusBadge(connected) {
     const el = document.getElementById('connection-status');
     const eventStatus = document.getElementById('event-connection-status');
@@ -1031,6 +1535,24 @@ function getWorkerInfo(jobType) {
                 name: 'Insurance Policy Manager',
                 description: 'Creates, updates, deletes and queries insurance policies (CAR, HOME, PET, LONG_TERM_INJURY)',
                 icon: 'fa-shield-halved'
+            };
+        case 'manage-package':
+            return {
+                name: 'Package Manager',
+                description: 'Creates, updates, deletes and queries logistics packages and their delivery status',
+                icon: 'fa-truck'
+            };
+        case 'manage-product':
+            return {
+                name: 'Product Manager',
+                description: 'Creates, updates, deletes and queries sellable products (pricing, stock, tier)',
+                icon: 'fa-box-open'
+            };
+        case 'manage-purchase-order':
+            return {
+                name: 'Purchase Order Manager',
+                description: 'Creates, updates, deletes and queries purchase orders with line items',
+                icon: 'fa-file-invoice-dollar'
             };
         default:
             return {
@@ -1539,15 +2061,56 @@ function setEventPublishResult(message, type) {
 
 function toggleEventFieldsByType() {
     const type = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
-    const correlation = document.getElementById('event-correlation-key');
     const advanced = document.getElementById('event-message-advanced-row');
     if (type === 'SIGNAL') {
-        correlation.closest('.col-md-4').style.display = 'none';
         advanced.style.display = 'none';
-        correlation.value = '';
+        document.getElementById('event-correlation-key').value = '';
+        document.getElementById('event-message-id').value = '';
+        document.getElementById('event-ttl-ms').value = '';
     } else {
-        correlation.closest('.col-md-4').style.display = '';
         advanced.style.display = '';
+    }
+    updateEventTypePill(type);
+}
+
+function updateEventTypePill(type) {
+    const pill = document.getElementById('event-type-pill');
+    if (!pill) return;
+    const isSignal = type === 'SIGNAL';
+    pill.className = 'event-type-pill ' + (isSignal ? 'event-type-signal' : 'event-type-message');
+    pill.innerHTML = isSignal
+        ? '<i class="fa-solid fa-tower-broadcast"></i><span>Signal</span>'
+        : '<i class="fa-solid fa-envelope"></i><span>Message</span>';
+}
+
+function updateEventValidity() {
+    const el = document.getElementById('event-validity');
+    if (!el) return;
+    const text = (document.getElementById('event-payload').value || '').trim();
+    const textSpan = el.querySelector('.event-validity-text');
+    if (!text) {
+        el.className = 'event-validity';
+        el.title = '';
+        el.innerHTML = '<i class="fa-regular fa-circle"></i><span class="event-validity-text">empty payload</span>';
+        return;
+    }
+    try {
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            throw new Error('must be a JSON object');
+        }
+        el.className = 'event-validity is-valid';
+        el.title = '';
+        el.innerHTML = '<i class="fa-solid fa-check"></i><span class="event-validity-text">valid JSON object</span>';
+    } catch (err) {
+        const msg = (err && err.message) ? err.message : 'invalid';
+        el.className = 'event-validity is-invalid';
+        el.title = msg;
+        const span = document.createElement('span');
+        span.className = 'event-validity-text';
+        span.textContent = msg;
+        el.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        el.appendChild(span);
     }
 }
 
@@ -1570,6 +2133,7 @@ function writeEventFormState(state) {
     document.getElementById('event-ttl-ms').value = state.timeToLiveMs || '';
     document.getElementById('event-payload').value = state.payloadText || '{}';
     toggleEventFieldsByType();
+    updateEventValidity();
 }
 
 function validateEventFormState(state) {
@@ -1588,6 +2152,7 @@ function validateEventFormState(state) {
 function prettyEventPayload() {
     const payload = getEventPayloadObject();
     document.getElementById('event-payload').value = JSON.stringify(payload, null, 2);
+    updateEventValidity();
     setEventPublishResult('Payload JSON is valid.', 'info');
 }
 
@@ -1599,7 +2164,7 @@ function validateEventPayload() {
 function renderEventPresetOptions() {
     const select = document.getElementById('event-preset-select');
     const selected = select.value;
-    select.innerHTML = '<option value="">Select preset...</option>';
+    select.innerHTML = '<option value="">Select preset to load...</option>';
     eventPresetsCache.forEach(preset => {
         const option = document.createElement('option');
         option.value = String(preset.id);
@@ -1732,27 +2297,54 @@ function formatDispatchTime(value) {
 function renderEventDispatchHistory() {
     const tbody = document.getElementById('event-dispatch-history-body');
     if (!eventDispatchHistory.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No dispatches yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">No dispatches yet</td></tr>';
         return;
     }
 
     tbody.innerHTML = eventDispatchHistory
-        .map(entry => `
+        .map((entry, idx) => `
             <tr>
-                <td>${escapeHtml(formatDispatchTime(entry.time || ''))}</td>
+                <td style="white-space:nowrap;font-size:0.82rem;">${escapeHtml(formatDispatchTime(entry.time || ''))}</td>
                 <td><span class="badge bg-light text-dark border">${escapeHtml(entry.eventType || '')}</span></td>
                 <td>${escapeHtml(entry.name || '')}</td>
-                <td>${escapeHtml(entry.correlationKey || '-')}</td>
-                <td><span class="badge bg-${entry.success ? 'success' : 'danger'}">${entry.success ? 'SUCCESS' : 'FAILED'}</span></td>
-                <td><small>${escapeHtml(entry.detail || '')}</small></td>
+                <td><code class="text-secondary" style="font-size:0.8rem;">${escapeHtml(entry.correlationKey || '—')}</code></td>
+                <td><span class="badge bg-${entry.success ? 'success' : 'danger'}">${entry.success ? 'OK' : 'FAILED'}</span></td>
+                <td><small class="text-muted">${escapeHtml(entry.detail || '')}</small></td>
+                <td><button class="btn btn-outline-secondary event-replay-btn" onclick="replayDispatch(${idx})" title="Load into form"><i class="fa-solid fa-rotate-left"></i></button></td>
             </tr>
         `)
         .join('');
 }
 
+function replayDispatch(idx) {
+    const entry = eventDispatchHistory[idx];
+    if (!entry) return;
+    let payloadText = '{}';
+    if (entry.payloadJson) {
+        try {
+            payloadText = JSON.stringify(JSON.parse(entry.payloadJson), null, 2);
+        } catch (_) {
+            payloadText = entry.payloadJson;
+        }
+    }
+    writeEventFormState({
+        eventType: entry.eventType || 'MESSAGE',
+        name: entry.name || '',
+        correlationKey: entry.correlationKey || '',
+        messageId: '',
+        timeToLiveMs: '',
+        payloadText
+    });
+    setEventPublishResult(`Loaded from history: ${entry.name}`, 'info');
+    document.getElementById('event-payload').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 function loadEventDispatchHistory() {
     const eventType = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
-    return fetch(`/api/engine/event-dispatches?eventType=${encodeURIComponent(eventType)}&limit=50`)
+    const url = eventHistoryShowAll
+        ? '/api/engine/event-dispatches?limit=50'
+        : `/api/engine/event-dispatches?eventType=${encodeURIComponent(eventType)}&limit=50`;
+    return fetch(url)
         .then(async response => {
             const json = await response.json().catch(() => []);
             if (!response.ok) {
@@ -1773,9 +2365,10 @@ function loadEventDispatchHistory() {
 
 function clearDispatchHistory() {
     const eventType = (document.getElementById('event-type').value || 'MESSAGE').toUpperCase();
-    fetch(`/api/engine/event-dispatches?eventType=${encodeURIComponent(eventType)}`, {
-        method: 'DELETE'
-    })
+    const url = eventHistoryShowAll
+        ? '/api/engine/event-dispatches'
+        : `/api/engine/event-dispatches?eventType=${encodeURIComponent(eventType)}`;
+    fetch(url, { method: 'DELETE' })
         .then(async response => {
             const json = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -1786,7 +2379,7 @@ function clearDispatchHistory() {
         .then(() => {
             eventDispatchHistory = [];
             renderEventDispatchHistory();
-            setEventPublishResult('Dispatch history cleared for selected type.', 'info');
+            setEventPublishResult('Dispatch history cleared.', 'info');
         })
         .catch(error => {
             setEventPublishResult(`Failed to clear dispatch history: ${error.message}`, 'danger');
@@ -1872,9 +2465,33 @@ function initEventPublisherControls() {
     document.getElementById('event-pretty-btn').addEventListener('click', prettyEventPayload);
     document.getElementById('event-validate-btn').addEventListener('click', validateEventPayload);
     document.getElementById('event-save-preset-btn').addEventListener('click', saveCurrentAsPreset);
-    document.getElementById('event-load-preset-btn').addEventListener('click', loadSelectedPreset);
     document.getElementById('event-delete-preset-btn').addEventListener('click', deleteSelectedPreset);
     document.getElementById('event-history-clear-btn').addEventListener('click', clearDispatchHistory);
+
+    document.getElementById('event-preset-select').addEventListener('change', () => {
+        if (document.getElementById('event-preset-select').value) {
+            loadSelectedPreset();
+        }
+    });
+
+    document.getElementById('event-payload').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            publishEventToEngine();
+        }
+    });
+
+    document.getElementById('event-payload').addEventListener('input', updateEventValidity);
+    updateEventValidity();
+
+    document.querySelectorAll('#event-history-type-filter button').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#event-history-type-filter button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            eventHistoryShowAll = btn.dataset.filter === 'all';
+            loadEventDispatchHistory();
+        });
+    });
 }
 
 function escapeHtml(text) {
@@ -1893,7 +2510,10 @@ const entityTableMap = {
     employees: { tableId: 'employees-table', idField: 'employeeId' },
     companies: { tableId: 'companies-table', idField: 'companyId' },
     accounts:  { tableId: 'accounts-table',  idField: 'accountId'  },
-    policies:  { tableId: 'policies-table',  idField: 'policyId',   apiPath: 'insurance-policies', displayColumns: ['policyId','policyNumber','policyType','status','holderType','customerId','premiumAmount','coverageAmount','startDate','endDate'] }
+    policies:  { tableId: 'policies-table',  idField: 'policyId',   apiPath: 'insurance-policies', displayColumns: ['policyId','policyNumber','policyType','status','holderType','customerId','premiumAmount','coverageAmount','startDate','endDate'] },
+    packages:  { tableId: 'packages-table',  idField: 'packageId',  displayColumns: ['packageId','trackingNumber','status','serviceLevel','senderName','recipientName','destinationAddress','weightKg','estimatedDeliveryDate'] },
+    products:  { tableId: 'products-table',  idField: 'productId',  displayColumns: ['productId','sku','name','description','category','manufacturer','rrp','unitCost','margin','inStock','stockQty','tier'] },
+    orders:    { tableId: 'orders-table',    idField: 'orderId',    apiPath: 'purchase-orders', displayColumns: ['orderId','orderNumber','status','customerId','orderDate','expectedDeliveryDate','itemCount','totalAmount','notes'] }
 };
 
 const tableDataCache = {
@@ -1902,7 +2522,10 @@ const tableDataCache = {
     'companies-table': [],
     'accounts-table':  [],
     'links-table':     [],
-    'policies-table':  []
+    'policies-table':  [],
+    'packages-table':  [],
+    'products-table':  [],
+    'orders-table':    []
 };
 
 const tableViewState = {
@@ -1911,7 +2534,10 @@ const tableViewState = {
     'companies-table': { filter: '', sortKey: '', sortDir: 'asc' },
     'accounts-table':  { filter: '', sortKey: '', sortDir: 'asc' },
     'links-table':     { filter: '', sortKey: '', sortDir: 'asc' },
-    'policies-table':  { filter: '', sortKey: '', sortDir: 'asc' }
+    'policies-table':  { filter: '', sortKey: '', sortDir: 'asc' },
+    'packages-table':  { filter: '', sortKey: '', sortDir: 'asc' },
+    'products-table':  { filter: '', sortKey: '', sortDir: 'asc' },
+    'orders-table':    { filter: '', sortKey: '', sortDir: 'asc' }
 };
 
 const tabPaneToTableMap = {
@@ -1920,7 +2546,10 @@ const tabPaneToTableMap = {
     'companies-data': 'companies-table',
     'accounts-data':  'accounts-table',
     'links-data':     'links-table',
-    'policies-data':  'policies-table'
+    'policies-data':  'policies-table',
+    'packages-data':  'packages-table',
+    'products-data':  'products-table',
+    'orders-data':    'orders-table'
 };
 
 let activeTableId = 'customers-table';
@@ -2048,7 +2677,7 @@ function initTableTools() {
         });
     }
 
-    const tabButtons = document.querySelectorAll('#dataTableTabs button[data-bs-toggle="pill"]');
+    const tabButtons = document.querySelectorAll('#dataTableTabs [data-bs-toggle="pill"]');
     tabButtons.forEach(button => {
         button.addEventListener('shown.bs.tab', (event) => {
             const targetSelector = event.target.getAttribute('data-bs-target');
@@ -2099,7 +2728,7 @@ function renderTable(data, tableId) {
 
         if (includeActions) {
             const entityId = config ? row[config.idField] : null;
-            const canEdit = entityType === 'customers' || entityType === 'employees' || entityType === 'companies' || entityType === 'accounts' || entityType === 'policies';
+            const canEdit = entityType === 'customers' || entityType === 'employees' || entityType === 'companies' || entityType === 'accounts' || entityType === 'policies' || entityType === 'packages' || entityType === 'products' || entityType === 'orders';
             const canDelete = entityId !== null && entityId !== undefined;
 
             let actionsHtml = '';
@@ -2113,7 +2742,12 @@ function renderTable(data, tableId) {
         }
 
         keys.forEach(k => {
-            tbody += `<td>${row[k] !== null && row[k] !== undefined ? row[k] : ''}</td>`;
+            const val = row[k];
+            if (typeof val === 'boolean') {
+                tbody += `<td><span class="badge bg-${val ? 'danger' : 'secondary'}">${val ? 'Yes' : 'No'}</span></td>`;
+            } else {
+                tbody += `<td>${val !== null && val !== undefined ? val : ''}</td>`;
+            }
         });
 
         tbody += '</tr>';
@@ -2124,6 +2758,8 @@ function renderTable(data, tableId) {
     // Update count displays
     if (tableId === 'customers-table') {
         document.getElementById('customers-count').textContent = processedData.length;
+    } else if (tableId === 'links-table') {
+        document.getElementById('links-count').textContent = processedData.length;
     } else if (tableId === 'employees-table') {
         document.getElementById('employees-count').textContent = processedData.length;
     } else if (tableId === 'companies-table') {
@@ -2132,6 +2768,12 @@ function renderTable(data, tableId) {
         document.getElementById('accounts-count').textContent = processedData.length;
     } else if (tableId === 'policies-table') {
         document.getElementById('policies-count').textContent = processedData.length;
+    } else if (tableId === 'packages-table') {
+        document.getElementById('packages-count').textContent = processedData.length;
+    } else if (tableId === 'products-table') {
+        document.getElementById('products-count').textContent = processedData.length;
+    } else if (tableId === 'orders-table') {
+        document.getElementById('orders-count').textContent = processedData.length;
     }
 
     if (tableId === activeTableId) {
@@ -2212,6 +2854,9 @@ function refreshAll() {
     fetchAndRenderTable('/api/accounts', 'accounts-table');
     fetchAndRenderTable('/api/customer-accounts', 'links-table');
     fetchAndRenderTable('/api/insurance-policies', 'policies-table');
+    fetchAndRenderTable('/api/packages', 'packages-table');
+    fetchAndRenderTable('/api/products', 'products-table');
+    fetchAndRenderTable('/api/purchase-orders', 'orders-table');
 }
 refreshAll();
 initTableTools();
@@ -2337,6 +2982,7 @@ function editEntity(entityType, entityId) {
                 document.getElementById('companyAddressInput').value = company.address || '';
                 document.getElementById('companyContactInput').value = company.contactPerson || '';
                 document.getElementById('companyPhoneInput').value = company.phoneNumber || '';
+                document.getElementById('companySanctionedInput').checked = !!company.sanctioned;
                 new bootstrap.Modal(document.getElementById('companyModal')).show();
             })
             .catch(e => showModalError('companyModalError', e.message));
@@ -2408,6 +3054,93 @@ function editEntity(entityType, entityId) {
                 new bootstrap.Modal(document.getElementById('policyModal')).show();
             })
             .catch(e => showModalError('policyModalError', e.message));
+    } else if (entityType === 'packages') {
+        clearModalError('packageModalError');
+        fetch(`/api/packages/${entityId}`)
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) {
+                    throw new Error(extractApiErrorMessage(data, `Failed to load package (${r.status})`));
+                }
+                return data;
+            })
+            .then(pkg => {
+                document.getElementById('packageModalTitle').textContent = 'Edit Package';
+                document.getElementById('packageIdInput').value = pkg.packageId;
+                document.getElementById('packageIdInput').disabled = true;
+                document.getElementById('trackingNumberInput').value = pkg.trackingNumber || '';
+                document.getElementById('packageStatusInput').value = pkg.status || 'CREATED';
+                document.getElementById('packageServiceLevelInput').value = pkg.serviceLevel || 'STANDARD';
+                document.getElementById('packageCustomerIdInput').value = pkg.customerId || '';
+                document.getElementById('packageWeightInput').value = pkg.weightKg || '';
+                document.getElementById('packageSenderInput').value = pkg.senderName || '';
+                document.getElementById('packageRecipientInput').value = pkg.recipientName || '';
+                document.getElementById('packageOriginInput').value = pkg.originAddress || '';
+                document.getElementById('packageDestinationInput').value = pkg.destinationAddress || '';
+                document.getElementById('packageShippedDateInput').value = pkg.shippedDate || '';
+                document.getElementById('packageEstDeliveryInput').value = pkg.estimatedDeliveryDate || '';
+                document.getElementById('packageDeliveredDateInput').value = pkg.deliveredDate || '';
+                document.getElementById('packageShippingCostInput').value = pkg.shippingCost || '';
+                document.getElementById('packageContentsInput').value = pkg.contents || '';
+                document.getElementById('packageNotesInput').value = pkg.notes || '';
+                new bootstrap.Modal(document.getElementById('packageModal')).show();
+            })
+            .catch(e => showModalError('packageModalError', e.message));
+    } else if (entityType === 'products') {
+        clearModalError('productModalError');
+        fetch(`/api/products/${entityId}`)
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(extractApiErrorMessage(data, `Failed to load product (${r.status})`));
+                return data;
+            })
+            .then(product => {
+                document.getElementById('productModalTitle').textContent = 'Edit Product';
+                document.getElementById('productIdInput').value = product.productId;
+                document.getElementById('productIdInput').disabled = true;
+                document.getElementById('productSkuInput').value = product.sku || '';
+                document.getElementById('productNameInput').value = product.name || '';
+                document.getElementById('productDescriptionInput').value = product.description || '';
+                document.getElementById('productCategoryInput').value = product.category || '';
+                document.getElementById('productManufacturerInput').value = product.manufacturer || '';
+                document.getElementById('productTierInput').value = product.tier || '';
+                document.getElementById('productRrpInput').value = product.rrp || '';
+                document.getElementById('productUnitCostInput').value = product.unitCost || '';
+                document.getElementById('productStockQtyInput').value = product.stockQty != null ? product.stockQty : '';
+                document.getElementById('productInStockInput').value = product.inStock === true ? 'true' : (product.inStock === false ? 'false' : '');
+                new bootstrap.Modal(document.getElementById('productModal')).show();
+            })
+            .catch(e => showModalError('productModalError', e.message));
+    } else if (entityType === 'orders') {
+        clearModalError('orderModalError');
+        ensureOrderItemCatalog()
+            .then(() => fetch(`/api/purchase-orders/${entityId}`))
+            .then(async r => {
+                const data = await r.json().catch(() => ({}));
+                if (!r.ok) throw new Error(extractApiErrorMessage(data, `Failed to load order (${r.status})`));
+                return data;
+            })
+            .then(order => {
+                document.getElementById('orderModalTitle').textContent = 'Edit Purchase Order';
+                document.getElementById('orderIdInput').value = order.orderId;
+                document.getElementById('orderIdInput').disabled = true;
+                document.getElementById('orderNumberInput').value = order.orderNumber || '';
+                document.getElementById('orderStatusInput').value = order.status || 'DRAFT';
+                document.getElementById('orderCustomerIdInput').value = order.customerId || '';
+                document.getElementById('orderDateInput').value = order.orderDate || '';
+                document.getElementById('orderExpectedDateInput').value = order.expectedDeliveryDate || '';
+                document.getElementById('orderNotesInput').value = order.notes || '';
+                document.getElementById('orderLinesBody').innerHTML = '';
+                const lines = order.items || [];
+                if (lines.length === 0) {
+                    addOrderLineRow();
+                } else {
+                    lines.forEach(line => addOrderLineRow(line));
+                }
+                recalcOrderTotal();
+                new bootstrap.Modal(document.getElementById('orderModal')).show();
+            })
+            .catch(e => showModalError('orderModalError', e.message));
     }
 }
 
@@ -2632,7 +3365,8 @@ function saveCompany() {
         companyName: normalizeText(document.getElementById('companyNameInput').value),
         address: normalizeText(document.getElementById('companyAddressInput').value),
         contactPerson: normalizeText(document.getElementById('companyContactInput').value),
-        phoneNumber: normalizeText(document.getElementById('companyPhoneInput').value)
+        phoneNumber: normalizeText(document.getElementById('companyPhoneInput').value),
+        sanctioned: document.getElementById('companySanctionedInput').checked
     };
 
     if (!currentEditId && entityExistsInCache('companies', company.companyId)) {
@@ -2737,6 +3471,26 @@ function refreshDataTables() {
     fetchAndRenderTable('/api/accounts', 'accounts-table');
     fetchAndRenderTable('/api/customer-accounts', 'links-table');
     fetchAndRenderTable('/api/insurance-policies', 'policies-table');
+    fetchAndRenderTable('/api/packages', 'packages-table');
+    fetchAndRenderTable('/api/products', 'products-table');
+    fetchAndRenderTable('/api/purchase-orders', 'orders-table');
+}
+
+const tableIdToApiUrl = {
+    'customers-table': '/api/customers',
+    'employees-table': '/api/employees',
+    'companies-table': '/api/companies',
+    'accounts-table':  '/api/accounts',
+    'links-table':     '/api/customer-accounts',
+    'policies-table':  '/api/insurance-policies',
+    'packages-table':  '/api/packages',
+    'products-table':  '/api/products',
+    'orders-table':    '/api/purchase-orders'
+};
+
+function refreshActiveTable() {
+    const url = tableIdToApiUrl[activeTableId];
+    if (url) fetchAndRenderTable(url, activeTableId);
 }
 
 function showAddPolicyModal() {
@@ -2850,6 +3604,274 @@ function savePolicy() {
     })
     .catch(e => showModalError('policyModalError', e.message))
     .finally(() => setSaveButtonState('savePolicyBtn', false));
+}
+
+function showAddPackageModal() {
+    currentEditId = null;
+    currentEditType = 'packages';
+    document.getElementById('packageModalTitle').textContent = 'Add Package';
+    document.getElementById('packageForm').reset();
+    document.getElementById('packageIdInput').disabled = false;
+    clearModalError('packageModalError');
+    new bootstrap.Modal(document.getElementById('packageModal')).show();
+}
+
+function savePackage() {
+    clearModalError('packageModalError');
+    if (!validateForm('packageForm')) {
+        return;
+    }
+
+    const packageIdVal = document.getElementById('packageIdInput').value;
+    const trackingVal = document.getElementById('trackingNumberInput').value.trim();
+    const customerIdVal = document.getElementById('packageCustomerIdInput').value;
+    const shippingCostVal = document.getElementById('packageShippingCostInput').value;
+
+    const pkg = {
+        packageId: packageIdVal ? parseInt(packageIdVal) : null,
+        trackingNumber: trackingVal || null,
+        status: document.getElementById('packageStatusInput').value,
+        serviceLevel: document.getElementById('packageServiceLevelInput').value,
+        customerId: customerIdVal ? parseInt(customerIdVal) : null,
+        weightKg: parseFloat(document.getElementById('packageWeightInput').value),
+        senderName: document.getElementById('packageSenderInput').value.trim(),
+        recipientName: document.getElementById('packageRecipientInput').value.trim(),
+        originAddress: document.getElementById('packageOriginInput').value.trim(),
+        destinationAddress: document.getElementById('packageDestinationInput').value.trim(),
+        shippedDate: document.getElementById('packageShippedDateInput').value || null,
+        estimatedDeliveryDate: document.getElementById('packageEstDeliveryInput').value || null,
+        deliveredDate: document.getElementById('packageDeliveredDateInput').value || null,
+        shippingCost: shippingCostVal ? parseFloat(shippingCostVal) : null,
+        contents: normalizeText(document.getElementById('packageContentsInput').value) || null,
+        notes: normalizeText(document.getElementById('packageNotesInput').value) || null
+    };
+
+    if (!currentEditId && pkg.packageId && entityExistsInCache('packages', pkg.packageId)) {
+        showModalError('packageModalError', 'A package with this ID already exists.');
+        return;
+    }
+
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/packages/${currentEditId}` : '/api/packages';
+    setSaveButtonState('savePackageBtn', true);
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pkg)
+    })
+    .then(async r => {
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+            throw new Error(extractApiErrorMessage(data, `Save failed (${r.status})`));
+        }
+        return data;
+    })
+    .then(data => {
+        bootstrap.Modal.getInstance(document.getElementById('packageModal')).hide();
+        if (!applyOptimisticEntitySave('packages', data, Boolean(currentEditId))) {
+            refreshDataTables();
+        }
+        showToast(currentEditId ? 'Package updated successfully.' : 'Package created successfully.');
+    })
+    .catch(e => showModalError('packageModalError', e.message))
+    .finally(() => setSaveButtonState('savePackageBtn', false));
+}
+
+// ----- Products -----
+function showAddProductModal() {
+    currentEditId = null;
+    currentEditType = 'products';
+    document.getElementById('productModalTitle').textContent = 'Add Product';
+    document.getElementById('productForm').reset();
+    document.getElementById('productIdInput').disabled = false;
+    clearModalError('productModalError');
+    new bootstrap.Modal(document.getElementById('productModal')).show();
+}
+
+function saveProduct() {
+    clearModalError('productModalError');
+    if (!validateForm('productForm')) {
+        return;
+    }
+    const productIdVal = document.getElementById('productIdInput').value;
+    const stockQtyVal = document.getElementById('productStockQtyInput').value;
+    const inStockVal = document.getElementById('productInStockInput').value;
+    const product = {
+        productId: productIdVal ? parseInt(productIdVal) : null,
+        sku: document.getElementById('productSkuInput').value.trim() || null,
+        name: document.getElementById('productNameInput').value.trim(),
+        description: normalizeText(document.getElementById('productDescriptionInput').value) || null,
+        category: normalizeText(document.getElementById('productCategoryInput').value) || null,
+        manufacturer: normalizeText(document.getElementById('productManufacturerInput').value) || null,
+        tier: normalizeText(document.getElementById('productTierInput').value) || null,
+        rrp: parseFloat(document.getElementById('productRrpInput').value),
+        unitCost: parseFloat(document.getElementById('productUnitCostInput').value),
+        stockQty: stockQtyVal ? parseInt(stockQtyVal) : null,
+        inStock: inStockVal === '' ? null : (inStockVal === 'true')
+    };
+
+    if (!currentEditId && product.productId && entityExistsInCache('products', product.productId)) {
+        showModalError('productModalError', 'A product with this ID already exists.');
+        return;
+    }
+
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/products/${currentEditId}` : '/api/products';
+    setSaveButtonState('saveProductBtn', true);
+    fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(product) })
+        .then(async r => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(extractApiErrorMessage(data, `Save failed (${r.status})`));
+            return data;
+        })
+        .then(data => {
+            bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+            if (!applyOptimisticEntitySave('products', data, Boolean(currentEditId))) {
+                refreshDataTables();
+            }
+            showToast(currentEditId ? 'Product updated successfully.' : 'Product created successfully.');
+        })
+        .catch(e => showModalError('productModalError', e.message))
+        .finally(() => setSaveButtonState('saveProductBtn', false));
+}
+
+// ----- Purchase Orders (with line-item editor) -----
+let orderItemCatalog = [];
+
+function ensureOrderItemCatalog() {
+    if (orderItemCatalog.length > 0) {
+        return Promise.resolve(orderItemCatalog);
+    }
+    return fetch('/api/products')
+        .then(r => r.json())
+        .then(data => { orderItemCatalog = Array.isArray(data) ? data : []; return orderItemCatalog; })
+        .catch(() => { orderItemCatalog = []; return orderItemCatalog; });
+}
+
+function orderItemOptionsHtml(selectedId) {
+    let html = '<option value="">Select item…</option>';
+    orderItemCatalog.forEach(it => {
+        const sel = String(it.productId) === String(selectedId) ? 'selected' : '';
+        const label = escapeHtml((it.sku ? it.sku + ' — ' : '') + (it.name || ('Product ' + it.productId)));
+        html += `<option value="${it.productId}" data-rrp="${it.rrp != null ? it.rrp : ''}" ${sel}>${label}</option>`;
+    });
+    return html;
+}
+
+function addOrderLineRow(line) {
+    const tbody = document.getElementById('orderLinesBody');
+    const tr = document.createElement('tr');
+    tr.className = 'order-line-row';
+    const qty = line && line.quantity != null ? line.quantity : 1;
+    const price = line && line.unitPrice != null ? line.unitPrice : '';
+    tr.innerHTML = `
+        <td><select class="form-select form-select-sm order-line-item" onchange="onOrderLineItemChange(this)">${orderItemOptionsHtml(line ? line.productId : '')}</select></td>
+        <td><input type="number" min="1" class="form-control form-control-sm order-line-qty" value="${qty}" oninput="recalcOrderTotal()"></td>
+        <td><input type="number" step="0.01" min="0" class="form-control form-control-sm order-line-price" value="${price}" oninput="recalcOrderTotal()"></td>
+        <td class="order-line-total">0.00</td>
+        <td><button type="button" class="btn btn-outline-danger btn-sm" title="Remove line" onclick="this.closest('tr').remove(); recalcOrderTotal();"><i class="fa-solid fa-xmark"></i></button></td>`;
+    tbody.appendChild(tr);
+    recalcOrderTotal();
+}
+
+function onOrderLineItemChange(select) {
+    const opt = select.options[select.selectedIndex];
+    const priceInput = select.closest('tr').querySelector('.order-line-price');
+    if (opt && opt.dataset.rrp && !priceInput.value) {
+        priceInput.value = opt.dataset.rrp;
+    }
+    recalcOrderTotal();
+}
+
+function recalcOrderTotal() {
+    let total = 0;
+    document.querySelectorAll('#orderLinesBody .order-line-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.order-line-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.order-line-price').value) || 0;
+        const lineTotal = qty * price;
+        row.querySelector('.order-line-total').textContent = lineTotal.toFixed(2);
+        total += lineTotal;
+    });
+    document.getElementById('orderTotalCell').textContent = total.toFixed(2);
+}
+
+function collectOrderLines() {
+    const lines = [];
+    document.querySelectorAll('#orderLinesBody .order-line-row').forEach(row => {
+        const productId = row.querySelector('.order-line-item').value;
+        const qty = row.querySelector('.order-line-qty').value;
+        const price = row.querySelector('.order-line-price').value;
+        if (!productId) return;
+        lines.push({
+            productId: parseInt(productId),
+            quantity: qty ? parseInt(qty) : 1,
+            unitPrice: price ? parseFloat(price) : null
+        });
+    });
+    return lines;
+}
+
+function showAddOrderModal() {
+    currentEditId = null;
+    currentEditType = 'orders';
+    document.getElementById('orderModalTitle').textContent = 'Add Purchase Order';
+    document.getElementById('orderForm').reset();
+    document.getElementById('orderIdInput').disabled = false;
+    document.getElementById('orderLinesBody').innerHTML = '';
+    clearModalError('orderModalError');
+    ensureOrderItemCatalog().then(() => {
+        addOrderLineRow();
+        recalcOrderTotal();
+        new bootstrap.Modal(document.getElementById('orderModal')).show();
+    });
+}
+
+function saveOrder() {
+    clearModalError('orderModalError');
+    if (!validateForm('orderForm')) {
+        return;
+    }
+    const lines = collectOrderLines();
+    if (lines.length === 0) {
+        showModalError('orderModalError', 'A purchase order needs at least one line item with an item selected.');
+        return;
+    }
+
+    const orderIdVal = document.getElementById('orderIdInput').value;
+    const order = {
+        orderId: orderIdVal ? parseInt(orderIdVal) : null,
+        orderNumber: document.getElementById('orderNumberInput').value.trim() || null,
+        status: document.getElementById('orderStatusInput').value,
+        customerId: document.getElementById('orderCustomerIdInput').value ? parseInt(document.getElementById('orderCustomerIdInput').value) : null,
+        orderDate: document.getElementById('orderDateInput').value || null,
+        expectedDeliveryDate: document.getElementById('orderExpectedDateInput').value || null,
+        notes: normalizeText(document.getElementById('orderNotesInput').value) || null,
+        items: lines
+    };
+
+    if (!currentEditId && order.orderId && entityExistsInCache('orders', order.orderId)) {
+        showModalError('orderModalError', 'A purchase order with this ID already exists.');
+        return;
+    }
+
+    const method = currentEditId ? 'PUT' : 'POST';
+    const url = currentEditId ? `/api/purchase-orders/${currentEditId}` : '/api/purchase-orders';
+    setSaveButtonState('saveOrderBtn', true);
+    fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(order) })
+        .then(async r => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(extractApiErrorMessage(data, `Save failed (${r.status})`));
+            return data;
+        })
+        .then(data => {
+            bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+            // Order rows include nested lines; re-fetch to keep the table totals/counts accurate
+            refreshDataTables();
+            showToast(currentEditId ? 'Purchase order updated successfully.' : 'Purchase order created successfully.');
+        })
+        .catch(e => showModalError('orderModalError', e.message))
+        .finally(() => setSaveButtonState('saveOrderBtn', false));
 }
 </script>
 </body>

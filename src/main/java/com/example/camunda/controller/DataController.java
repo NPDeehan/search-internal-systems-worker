@@ -5,6 +5,10 @@ import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
 import com.example.camunda.model.ExternalCompany;
 import com.example.camunda.model.InsurancePolicy;
+import com.example.camunda.model.Package;
+import com.example.camunda.model.Product;
+import com.example.camunda.model.PurchaseOrder;
+import com.example.camunda.model.PurchaseItem;
 import com.example.camunda.model.JobHistory;
 import com.example.camunda.model.Account;
 import com.example.camunda.model.AccountRole;
@@ -14,6 +18,10 @@ import com.example.camunda.service.EmployeeService;
 import com.example.camunda.service.CompanyService;
 import com.example.camunda.service.CustomerAccountLinkService;
 import com.example.camunda.service.InsurancePolicyService;
+import com.example.camunda.service.PackageService;
+import com.example.camunda.service.ProductService;
+import com.example.camunda.service.PurchaseOrderService;
+import com.example.camunda.service.PurchaseItemService;
 import com.example.camunda.service.JobHistoryService;
 import com.example.camunda.service.ZeebeConnectionService;
 import com.example.camunda.service.AccountService;
@@ -49,6 +57,10 @@ public class DataController {
     private final AccountService accountService;
     private final CustomerAccountLinkService customerAccountLinkService;
     private final InsurancePolicyService insurancePolicyService;
+    private final PackageService packageService;
+    private final ProductService productService;
+    private final PurchaseOrderService purchaseOrderService;
+    private final PurchaseItemService purchaseItemService;
     private final JobHistoryService jobHistoryService;
     private final ZeebeConnectionService zeebeConnectionService;
     private final ZeebeJobPollingService pollingService;
@@ -59,6 +71,10 @@ public class DataController {
                          AccountService accountService,
                          CustomerAccountLinkService customerAccountLinkService,
                          InsurancePolicyService insurancePolicyService,
+                         PackageService packageService,
+                         ProductService productService,
+                         PurchaseOrderService purchaseOrderService,
+                         PurchaseItemService purchaseItemService,
                          JobHistoryService jobHistoryService,
                          ZeebeConnectionService zeebeConnectionService,
                          ZeebeJobPollingService pollingService) {
@@ -68,6 +84,10 @@ public class DataController {
         this.accountService = accountService;
         this.customerAccountLinkService = customerAccountLinkService;
         this.insurancePolicyService = insurancePolicyService;
+        this.packageService = packageService;
+        this.productService = productService;
+        this.purchaseOrderService = purchaseOrderService;
+        this.purchaseItemService = purchaseItemService;
         this.jobHistoryService = jobHistoryService;
         this.zeebeConnectionService = zeebeConnectionService;
         this.pollingService = pollingService;
@@ -229,6 +249,10 @@ public class DataController {
         status.put("manage-company-record", workerStatus);
         status.put("manage-customer-account-link", workerStatus);
         status.put("manage-insurance-policy", workerStatus);
+        status.put("manage-package", workerStatus);
+        status.put("manage-product", workerStatus);
+        status.put("manage-purchase-order", workerStatus);
+        status.put("manage-purchase-item", workerStatus);
 
         return status;
     }
@@ -380,6 +404,159 @@ public class DataController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "Insurance policy deleted successfully");
         return response;
+    }
+
+    // CRUD Operations for Packages
+    @GetMapping("/packages")
+    public List<Package> getPackages() {
+        log.debug("Fetching all packages");
+        return packageService.getAllPackages();
+    }
+
+    @GetMapping("/packages/{id}")
+    public Package getPackageById(@PathVariable Long id) {
+        log.debug("Fetching package with ID: {}", id);
+        return packageService.getPackageById(id);
+    }
+
+    @PostMapping("/packages")
+    public Package createPackage(@Valid @RequestBody Package pkg) {
+        log.info("Creating new package to: {}", pkg.getRecipientName());
+        return packageService.savePackage(pkg);
+    }
+
+    @PutMapping("/packages/{id}")
+    public Package updatePackage(@PathVariable Long id, @Valid @RequestBody Package pkg) {
+        log.info("Updating package with ID: {}", id);
+        pkg.setPackageId(id);
+        return packageService.savePackage(pkg);
+    }
+
+    @DeleteMapping("/packages/{id}")
+    public Map<String, String> deletePackage(@PathVariable Long id) {
+        log.info("Deleting package with ID: {}", id);
+        packageService.deletePackage(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Package deleted successfully");
+        return response;
+    }
+
+    // CRUD Operations for Products
+    @GetMapping("/products")
+    public List<Product> getProducts() {
+        log.debug("Fetching all products");
+        return productService.getAllProducts();
+    }
+
+    @GetMapping("/products/{id}")
+    public Product getProductById(@PathVariable Long id) {
+        log.debug("Fetching product with ID: {}", id);
+        return productService.getProductById(id);
+    }
+
+    @PostMapping("/products")
+    public Product createProduct(@Valid @RequestBody Product product) {
+        log.info("Creating new product: {}", product.getName());
+        return productService.saveProduct(product);
+    }
+
+    @PutMapping("/products/{id}")
+    public Product updateProduct(@PathVariable Long id, @Valid @RequestBody Product product) {
+        log.info("Updating product with ID: {}", id);
+        product.setProductId(id);
+        return productService.saveProduct(product);
+    }
+
+    @DeleteMapping("/products/{id}")
+    public Map<String, String> deleteProduct(@PathVariable Long id) {
+        log.info("Deleting product with ID: {}", id);
+        productService.deleteProduct(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Product deleted successfully");
+        return response;
+    }
+
+    // CRUD Operations for Purchase Orders
+    @GetMapping("/purchase-orders")
+    public List<PurchaseOrder> getPurchaseOrders() {
+        log.debug("Fetching all purchase orders");
+        return purchaseOrderService.getAllOrders();
+    }
+
+    @GetMapping("/purchase-orders/{id}")
+    public PurchaseOrder getPurchaseOrderById(@PathVariable Long id) {
+        log.debug("Fetching purchase order with ID: {}", id);
+        return purchaseOrderService.getOrderById(id);
+    }
+
+    @PostMapping("/purchase-orders")
+    public PurchaseOrder createPurchaseOrder(@Valid @RequestBody PurchaseOrder order) {
+        log.info("Creating new purchase order with {} item(s)", order.getItemCount());
+        return purchaseOrderService.saveOrder(order);
+    }
+
+    @PutMapping("/purchase-orders/{id}")
+    public PurchaseOrder updatePurchaseOrder(@PathVariable Long id, @Valid @RequestBody PurchaseOrder order) {
+        log.info("Updating purchase order with ID: {}", id);
+        order.setOrderId(id);
+        return purchaseOrderService.saveOrder(order);
+    }
+
+    @DeleteMapping("/purchase-orders/{id}")
+    public Map<String, String> deletePurchaseOrder(@PathVariable Long id) {
+        log.info("Deleting purchase order with ID: {}", id);
+        purchaseOrderService.deleteOrder(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Purchase order deleted successfully");
+        return response;
+    }
+
+    // Purchase Items (children of a purchase order)
+    @GetMapping("/purchase-orders/{orderId}/items")
+    public List<PurchaseItem> getItemsForOrder(@PathVariable Long orderId) {
+        log.debug("Fetching items for purchase order {}", orderId);
+        return purchaseItemService.getItemsByOrder(orderId);
+    }
+
+    @PostMapping("/purchase-orders/{orderId}/items")
+    public PurchaseItem addItemToOrder(@PathVariable Long orderId, @RequestBody Map<String, Object> request) {
+        Long productId = extractRequiredLong(request.get("productId"), "productId");
+        Integer quantity = request.get("quantity") != null ? extractRequiredLong(request.get("quantity"), "quantity").intValue() : null;
+        java.math.BigDecimal unitPrice = extractOptionalBigDecimal(request.get("unitPrice"));
+        log.info("Adding item product={} to order {}", productId, orderId);
+        return purchaseItemService.addItem(orderId, productId, quantity, unitPrice);
+    }
+
+    @GetMapping("/purchase-items/{id}")
+    public PurchaseItem getPurchaseItemById(@PathVariable Long id) {
+        log.debug("Fetching purchase item {}", id);
+        return purchaseItemService.getItemById(id);
+    }
+
+    @PutMapping("/purchase-items/{id}")
+    public PurchaseItem updatePurchaseItem(@PathVariable Long id, @RequestBody Map<String, Object> request) {
+        Long productId = request.get("productId") != null ? extractRequiredLong(request.get("productId"), "productId") : null;
+        Integer quantity = request.get("quantity") != null ? extractRequiredLong(request.get("quantity"), "quantity").intValue() : null;
+        java.math.BigDecimal unitPrice = extractOptionalBigDecimal(request.get("unitPrice"));
+        log.info("Updating purchase item {}", id);
+        return purchaseItemService.updateItem(id, productId, quantity, unitPrice);
+    }
+
+    @DeleteMapping("/purchase-items/{id}")
+    public Map<String, String> deletePurchaseItem(@PathVariable Long id) {
+        log.info("Deleting purchase item {}", id);
+        purchaseItemService.deleteItem(id);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Purchase item deleted successfully");
+        return response;
+    }
+
+    private java.math.BigDecimal extractOptionalBigDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number number) return java.math.BigDecimal.valueOf(number.doubleValue());
+        String str = value.toString().trim();
+        if (str.isEmpty()) return null;
+        try { return new java.math.BigDecimal(str); } catch (NumberFormatException e) { return null; }
     }
 
     private Map<String, Object> buildCustomerAccountLinkResponse(CustomerAccount link, String action) {

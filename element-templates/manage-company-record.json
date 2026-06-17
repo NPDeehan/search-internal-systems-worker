@@ -3,7 +3,7 @@
   "name": "Manage Company Record",
   "id": "com.example.camunda.manage-company-record",
   "description": "Create, update, or delete company records with operation-aware form fields. Company ID is auto-generated on CREATE when omitted.",
-  "version": 5,
+  "version": 6,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -181,6 +181,38 @@
       "group": "input",
       "feel": "optional",
       "binding": { "type": "zeebe:input", "name": "phoneNumber" },
+      "condition": { "property": "operation", "equals": "UPDATE", "type": "simple" }
+    },
+
+    {
+      "id": "sanctionedCreate",
+      "label": "Under Sanction",
+      "description": "Optional for CREATE. Whether this company is under a sanction. Defaults to false.",
+      "type": "Dropdown",
+      "value": "false",
+      "choices": [
+        { "name": "false", "value": "false" },
+        { "name": "true", "value": "true" }
+      ],
+      "group": "input",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "sanctioned" },
+      "condition": { "property": "operation", "equals": "CREATE", "type": "simple" }
+    },
+    {
+      "id": "sanctionedUpdate",
+      "label": "Under Sanction",
+      "description": "Optional for UPDATE. Set to true or false to change the sanction status.",
+      "type": "Dropdown",
+      "value": "",
+      "choices": [
+        { "name": "(no change)", "value": "" },
+        { "name": "false", "value": "false" },
+        { "name": "true", "value": "true" }
+      ],
+      "group": "input",
+      "feel": "optional",
+      "binding": { "type": "zeebe:input", "name": "sanctioned" },
       "condition": { "property": "operation", "equals": "UPDATE", "type": "simple" }
     },
 
