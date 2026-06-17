@@ -2,6 +2,7 @@ package com.example.camunda.service;
 
 import com.example.camunda.model.Customer;
 import com.example.camunda.model.Employee;
+import com.example.camunda.model.TrustLevel;
 import com.example.camunda.repository.CustomerRepository;
 import com.example.camunda.repository.EmployeeRepository;
 import com.example.camunda.exception.CustomerNotFoundException;
@@ -328,6 +329,46 @@ public class CustomerService {
         }
         
         return customers;
+    }
+
+    public List<Customer> searchCustomers(Long customerId, String customerName, String email, TrustLevel trustLevel, Boolean fuzzyMatching) {
+        log.debug("Searching customers - ID: {}, Name: '{}', Email: '{}', TrustLevel: {}, Fuzzy: {}",
+                customerId, customerName, email, trustLevel, fuzzyMatching);
+
+        // Email is unique — short-circuit on exact match
+        if (email != null && !email.trim().isEmpty()) {
+            return customerRepository.findByEmail(email.trim())
+                    .map(List::of)
+                    .orElse(List.of());
+        }
+
+        if (customerId != null) {
+            return customerRepository.findByCustomerId(customerId)
+                    .map(List::of)
+                    .orElse(List.of());
+        }
+
+        List<Customer> results = List.of();
+
+        if (customerName != null && !customerName.trim().isEmpty()) {
+            if (Boolean.TRUE.equals(fuzzyMatching)) {
+                results = performFuzzyCustomerSearch(customerName);
+            } else {
+                results = customerRepository.findByCustomerNameContainingIgnoreCase(customerName.trim());
+            }
+        } else if (trustLevel != null) {
+            results = customerRepository.findByTrustLevel(trustLevel);
+        } else {
+            results = customerRepository.findAll();
+        }
+
+        if (trustLevel != null) {
+            final TrustLevel filter = trustLevel;
+            results = results.stream().filter(c -> filter.equals(c.getTrustLevel())).toList();
+        }
+
+        log.debug("searchCustomers returned {} result(s)", results.size());
+        return results;
     }
 
     public List<Customer> getCustomersWithEmployees(Long customerId, String customerName, Boolean fuzzyMatching) {

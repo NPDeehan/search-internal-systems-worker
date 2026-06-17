@@ -3,7 +3,7 @@
   "name": "Search Account",
   "id": "com.example.camunda.search-account",
   "description": "Service task to search for accounts by accountId and/or customerId and return account details with customer roles",
-  "version": 3,
+  "version": 4,
   "category": {
     "id": "connectors",
     "name": "Connectors"
@@ -82,7 +82,7 @@
         "name": "accountId"
       },
       "constraints": {
-        "notEmpty": true
+        "notEmpty": false
       },
       "condition": {
         "property": "searchMode",
@@ -122,7 +122,7 @@
         "name": "customerAccountId"
       },
       "constraints": {
-        "notEmpty": true
+        "notEmpty": false
       },
       "condition": {
         "property": "searchMode",
@@ -162,7 +162,7 @@
         "name": "accountNumber"
       },
       "constraints": {
-        "notEmpty": true
+        "notEmpty": false
       },
       "condition": {
         "property": "searchMode",
@@ -202,7 +202,7 @@
         "name": "customerId"
       },
       "constraints": {
-        "notEmpty": true
+        "notEmpty": false
       },
       "condition": {
         "property": "searchMode",

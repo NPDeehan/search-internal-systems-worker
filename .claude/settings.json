@@ -12,7 +12,27 @@
       "Bash(powershell.exe -Command \"Get-NetTCPConnection -LocalPort 8081 -ErrorAction SilentlyContinue | Select-Object State,OwningProcess\")",
       "Bash(curl -s -X DELETE http://localhost:8081/api/insurance-policies/144 -w \"\\\\nHTTP Status: %{http_code}\")",
       "Bash(powershell.exe -Command ':*)",
-      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/Users/NiallDeehan/Documents/GitHub/search-internal-systems-worker/element-templates/manage-insurance-policy.json','utf8'\\)\\); console.log\\('Valid JSON'\\)\")"
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('c:/Users/NiallDeehan/Documents/GitHub/search-internal-systems-worker/element-templates/manage-insurance-policy.json','utf8'\\)\\); console.log\\('Valid JSON'\\)\")",
+      "Bash(./mvnw clean *)",
+      "Bash(chromium-cli --help)",
+      "Bash(tasklist /FI \"PID eq 26328\")",
+      "Bash(curl -sS -o /tmp/dash.html -w \"HTTP %{http_code}\\\\n\" http://localhost:8081/)",
+      "Read(//tmp/**)",
+      "Bash(python -c \"import playwright; print\\('py-playwright', playwright.__version__\\)\")",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(node -e \"console.log\\(require.resolve\\('playwright'\\)\\)\")",
+      "Bash(node -e \"console.log\\('node', process.version\\); console.log\\('WebSocket:', typeof WebSocket\\); console.log\\('fetch:', typeof fetch\\)\")",
+      "Bash(mkdir -p /tmp/cdp-verify && ls -la /tmp/cdp-verify)",
+      "Bash(node \"C:\\\\Users\\\\NiallDeehan\\\\AppData\\\\Local\\\\Temp\\\\cdp-verify\\\\drive.mjs\")",
+      "Bash(mvn -q compile)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "PowerShell(mvn clean compile -q 2>&1)"
+    ],
+    "additionalDirectories": [
+      "\\tmp",
+      "C:\\Users\\NiallDeehan\\AppData\\Local\\Temp\\cdp-verify",
+      "C:\\Users\\NiallDeehan\\Documents\\GitHub\\search-internal-systems-worker\\data"
     ]
   }
 }

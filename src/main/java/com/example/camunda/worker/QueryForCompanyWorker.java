@@ -89,6 +89,7 @@ public class QueryForCompanyWorker {
                 companyData.put("address", company.getAddress() != null ? company.getAddress() : "");
                 companyData.put("contactPerson", company.getContactPerson() != null ? company.getContactPerson() : "");
                 companyData.put("phoneNumber", company.getPhoneNumber() != null ? company.getPhoneNumber() : "");
+                companyData.put("sanctioned", company.isSanctioned());
                 return companyData;
             })
             .collect(Collectors.toList());

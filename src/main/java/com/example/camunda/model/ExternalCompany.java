@@ -24,6 +24,9 @@ public class ExternalCompany {
     private String address;
     private String contactPerson;
     private String phoneNumber;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private boolean sanctioned = false;
     
     @CreatedDate
     @Column(nullable = false, updatable = false)
@@ -72,6 +75,14 @@ public class ExternalCompany {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public boolean isSanctioned() {
+        return sanctioned;
+    }
+
+    public void setSanctioned(boolean sanctioned) {
+        this.sanctioned = sanctioned;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -50,6 +50,7 @@ public class CompanyCrudWorker {
         String address = extractString(variables.get("address"));
         String contactPerson = extractString(variables.get("contactPerson"));
         String phoneNumber = extractString(variables.get("phoneNumber"));
+        Boolean sanctioned = extractBoolean(variables.get("sanctioned"));
 
         String validationMessage = validateCreateInput(companyName);
         if (validationMessage != null) {
@@ -66,6 +67,7 @@ public class CompanyCrudWorker {
         company.setAddress(address);
         company.setContactPerson(contactPerson);
         company.setPhoneNumber(phoneNumber);
+        company.setSanctioned(sanctioned != null && sanctioned);
 
         ExternalCompany saved = companyService.saveCompany(company);
         return buildSuccessResult("CREATE", saved, "Company created successfully");
@@ -88,10 +90,13 @@ public class CompanyCrudWorker {
         String contactPerson = extractString(variables.get("contactPerson"));
         String phoneNumber = extractString(variables.get("phoneNumber"));
 
+        Boolean sanctioned = extractBoolean(variables.get("sanctioned"));
+
         if (companyName != null) company.setCompanyName(companyName);
         if (address != null) company.setAddress(address);
         if (contactPerson != null) company.setContactPerson(contactPerson);
         if (phoneNumber != null) company.setPhoneNumber(phoneNumber);
+        if (sanctioned != null) company.setSanctioned(sanctioned);
 
         ExternalCompany saved = companyService.saveCompany(company);
         return buildSuccessResult("UPDATE", saved, "Company updated successfully");
@@ -138,6 +143,7 @@ public class CompanyCrudWorker {
         companyData.put("address", company.getAddress());
         companyData.put("contactPerson", company.getContactPerson());
         companyData.put("phoneNumber", company.getPhoneNumber());
+        companyData.put("sanctioned", company.isSanctioned());
 
         Map<String, Object> companyCrudResult = new HashMap<>();
         companyCrudResult.put("status", "SUCCESS");
@@ -233,5 +239,14 @@ public class CompanyCrudWorker {
         if (value == null) return null;
         String result = value.toString().trim();
         return result.isEmpty() ? null : result;
+    }
+
+    private Boolean extractBoolean(Object value) {
+        if (value == null) return null;
+        if (value instanceof Boolean b) return b;
+        String str = value.toString().trim();
+        if (str.equalsIgnoreCase("true")) return true;
+        if (str.equalsIgnoreCase("false")) return false;
+        return null;
     }
 }

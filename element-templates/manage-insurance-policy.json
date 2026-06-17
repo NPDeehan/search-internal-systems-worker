@@ -152,16 +152,10 @@
     {
       "id": "status",
       "label": "Status",
-      "description": "Defaults to ACTIVE on CREATE.",
-      "type": "Dropdown",
-      "value": "ACTIVE",
-      "choices": [
-        { "name": "Active",    "value": "ACTIVE"    },
-        { "name": "Inactive",  "value": "INACTIVE"  },
-        { "name": "Expired",   "value": "EXPIRED"   },
-        { "name": "Cancelled", "value": "CANCELLED" }
-      ],
+      "description": "Defaults to ACTIVE on CREATE. Allowed values: ACTIVE, INACTIVE, EXPIRED, CANCELLED.",
+      "type": "Text",
       "group": "core",
+      "feel": "optional",
       "binding": { "type": "zeebe:input", "name": "status" },
       "condition": { "property": "operation", "oneOf": ["CREATE", "UPDATE"] }
     },
